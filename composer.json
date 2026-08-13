@@ -1,0 +1,8 @@
+{
+	"name": "passphrase-website",
+	"description": "Secure passphrase generator with no data storage",
+	"type": "project",
+	"require": {
+		"php": ">=7.4"
+	}
+}
