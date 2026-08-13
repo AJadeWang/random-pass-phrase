@@ -28,3 +28,7 @@ A zero-data-storage passphrase generator built with PHP and deployed to Firebase
 
 ```bash
 php -S localhost:8000
+```
+
+## Web App View
+https://random-pass-phrase.web.app/
