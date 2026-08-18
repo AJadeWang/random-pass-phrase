@@ -1,13 +1,14 @@
-FROM php:8.4-cli
+FROM php:8.4-apache
 
-# Set working directory
-WORKDIR /app
+# Set environment variable for Cloud Run port
+ENV PORT=8080
+
+# Configure Apache to listen on port 8080
+RUN sed -i 's/Listen 80/Listen 8080/g' /etc/apache2/ports.conf && \
+    sed -i 's/:80/:8080/g' /etc/apache2/sites-available/000-default.conf
 
 # Copy your PHP files
-COPY src/ /app/
+COPY src/ /var/www/html/
 
 # Expose port 8080
 EXPOSE 8080
-
-# Start PHP built-in server
-CMD ["php", "-S", "0.0.0.0:8080", "-t", "/app"]
