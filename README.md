@@ -31,4 +31,4 @@ php -S localhost:8000
 ```
 
 ## Web App View
-https://random-pass-phrase.web.app/
+[Link to secure live website](https://random-pass-phrase.web.app)
