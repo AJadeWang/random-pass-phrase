@@ -13,9 +13,8 @@ A zero-data-storage passphrase generator built with PHP and deployed to Firebase
 
 ## Technical Stack
 
-- PHP 8.2
 - Firebase Hosting
-- Vanilla JavaScript
+- Vanilla JavaScript, HTML, and CSS
 
 ## Deployment
 
@@ -24,10 +23,9 @@ A zero-data-storage passphrase generator built with PHP and deployed to Firebase
 3. Add FIREBASE_TOKEN as GitHub secret
 4. Push to main branch
 
-## Local Development
-
-```bash
-php -S localhost:8000
+## Live Demonstration
+[Link to firebase link](https://random-pass-phrase.web.app/)
+Or https://random-pass-phrase.web.app/
 ```
 
 ## Web App View
