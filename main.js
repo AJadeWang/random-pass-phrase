@@ -17,6 +17,7 @@ const WORD_CACHE_SIZE = 20; // Number of words to fetch at once
 // Word cache
 let wordCache = [];
 let isFetchingWords = false;
+const maxSegSize = 14;
 
 // DOM Elements
 const passphraseDisplay = document.getElementById('passphraseDisplay');
@@ -354,7 +355,7 @@ function renderSegments() {
         minRange.type = 'range';
         minRange.className = 'min-range';
         minRange.min = 1;
-        minRange.max = 14;
+        minRange.max = maxSegSize;
         minRange.value = segment.minLength || 4;
         
         // Max slider
@@ -362,7 +363,7 @@ function renderSegments() {
         maxRange.type = 'range';
         maxRange.className = 'max-range';
         maxRange.min = 1;
-        maxRange.max = 14;
+        maxRange.max = maxSegSize;
         maxRange.value = segment.maxLength || 4;
         
         // Track fill
@@ -396,9 +397,11 @@ function renderSegments() {
             
             label.textContent = `Length: ${finalMin} - ${finalMax}`;
             
-            // Update track fill
-            const percentMin = ((finalMin - 1) / 19) * 100;
-            const percentMax = ((finalMax - 1) / 19) * 100;
+            // Update track fill - using maxSegSize instead of hardcoded 20
+            const maxSegSize = 14; // Your max value
+            const range = maxSegSize - 1; // 14 - 1 = 13
+            const percentMin = ((finalMin - 1) / range) * 100;
+            const percentMax = ((finalMax - 1) / range) * 100;
             trackFill.style.left = percentMin + '%';
             trackFill.style.width = (percentMax - percentMin) + '%';
             
@@ -486,7 +489,7 @@ async function generatePassphrase() {
     passphraseDisplay.textContent = 'Generating...';
     
     // Get the separator from settings
-    const separator = settings.separator || '-';
+    const separator = settings.separator;
     
     try {
         const passphraseParts = await Promise.all(
