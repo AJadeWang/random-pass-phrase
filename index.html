@@ -16,17 +16,6 @@
         <div class="passphrase-display" id="passphraseDisplay">Click generate to create your passphrase</div>
         <button class="btn-copy" id="copyBtn">📋 Copy to Clipboard</button>
 
-        <!-- Segments List -->
-		<div class="segments-section">
-    		<div class="segments-header">
-        		<h3>Passphrase Segments</h3>
-        		<button class="btn-add" id="addSegmentBtn">+ Add Segment</button>
-			</div>
-    		<div id="segmentsList" class="segments-list">
-        		<!-- Segments will be rendered here by JavaScript -->
-            </div>
-        </div>
-
         <!-- Generate Button -->
         <button class="btn-generate" id="generateBtn">✨ Generate Passphrase</button>
 
@@ -37,7 +26,39 @@
                 <div class="strength-fill" id="strengthFill" style="width: 100%;"></div>
             </div>
         </div>
-        <div class="footer">🚀 No data stored • All generation happens in your browser</div>
+
+		<!-- Segments List -->
+		<div class="segments-section">
+    		<div class="segments-header">
+        		<h3>Passphrase Segments</h3>
+        		<button class="btn-add" id="addSegmentBtn">+ Add Segment</button>
+			</div>
+    		<div id="segmentsList" class="segments-list">
+        		<!-- Segments will be rendered here by JavaScript -->
+            </div>
+        </div>
+		
+		<!-- Settings Box -->
+		<div class="settings-box" id="settingsBox">
+			<div class="settings-header" id="settingsToggle">
+				<h3>⚙️ Settings</h3>
+				<span class="settings-arrow">▼</span>
+			</div>
+			<div class="settings-content" id="settingsContent">
+				<div class="setting-item">
+					<label for="separator">Separator:</label>
+					<input type="text" id="separator" value="-" maxlength="3" placeholder="-">
+				</div>
+				<div class="setting-item">
+					<label>
+						<input type="checkbox" id="filterProfanity">
+						Reject explicit words
+					</label>
+					<span class="setting-note">(Coming soon)</span>
+				</div>
+    		</div>
+		</div>
+		<div class="footer">🚀 No data stored • All generation happens in your browser</div>
     </div>
     
     <script src="main.js"></script>
