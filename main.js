@@ -18,7 +18,18 @@ const segmentsList = document.getElementById('segmentsList');
 const addSegmentBtn = document.getElementById('addSegmentBtn');
 const strengthFill = document.getElementById('strengthFill');
 
+// Settings elements
+const settingsToggle = document.getElementById('settingsToggle');
+const settingsContent = document.getElementById('settingsContent');
+const settingsArrow = document.querySelector('.settings-arrow');
+const separatorInput = document.getElementById('separator');
+const filterProfanityCheck = document.getElementById('filterProfanity');
+
 let segments = [];
+let settings = {
+    separator: '',
+    filterProfanity: false
+};
 
 // Default segment types
 const segmentTypes = [
