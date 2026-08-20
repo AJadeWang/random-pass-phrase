@@ -219,14 +219,34 @@ copyBtn.addEventListener('click', () => {
 });
 
 // Event Listeners
-addSegmentBtn.addEventListener('click', addSegment);
-generateBtn.addEventListener('click', generatePassphrase);
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize
+    addDefaultSegments();
+    
+    // Event listeners
+    addSegmentBtn.addEventListener('click', addSegment);
+    generateBtn.addEventListener('click', generatePassphrase);
+    copyBtn.addEventListener('click', () => {
+        const text = passphraseDisplay.textContent;
+        if (text && text !== 'Add at least one segment' && text !== 'Click generate to create your passphrase') {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '✅ Copied!';
+                setTimeout(() => { copyBtn.textContent = originalText; }, 2000);
+            }).catch(() => {
+                const range = document.createRange();
+                range.selectNode(passphraseDisplay);
+                window.getSelection().removeAllRanges();
+                window.getSelection().addRange(range);
+                document.execCommand('copy');
+                window.getSelection().removeAllRanges();
+            });
+        }
+    });
 
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
-        generatePassphrase();
-    }
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
+            generatePassphrase();
+        }
+    });
 });
-
-// Initialize
-addDefaultSegments();
