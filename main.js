@@ -38,6 +38,38 @@ const segmentTypes = [
     { value: 'symbol', label: 'Symbol' }
 ];
 
+// Settings toggle
+function toggleSettings() {
+    if (settingsContent) {
+        settingsContent.classList.toggle('open');
+        if (settingsArrow) {
+            settingsArrow.classList.toggle('open');
+        }
+    }
+}
+
+// Settings event listeners
+if (settingsToggle) {
+    settingsToggle.addEventListener('click', toggleSettings);
+}
+if (separatorInput) {
+    separatorInput.addEventListener('input', (e) => {
+        settings.separator = e.target.value || '-';
+        if (settings.separator.length === 0) {
+            settings.separator = '-';
+            e.target.value = '-';
+        }
+        generatePassphrase();
+    });
+}
+if (filterProfanityCheck) {
+    filterProfanityCheck.addEventListener('change', (e) => {
+        settings.filterProfanity = e.target.checked;
+        // Placeholder for future profanity filter function
+        generatePassphrase();
+    });
+}
+
 // Get random item from array
 function getRandomItem(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
@@ -237,8 +269,16 @@ function generatePassphrase() {
         return;
     }
     
+    // Get the separator from settings
+    const separator = settings.separator || '-';
+    
     const passphraseParts = segments.map(seg => generateSegment(seg.type, seg.minLength, seg.maxLength));
-    const passphrase = passphraseParts.join('-');
+    const passphrase = passphraseParts.join(separator);
+    
+    // Placeholder for profanity filter
+    // if (settings.filterProfanity && containsExplicitWords(passphrase)) {
+    //     // Regenerate or handle profanity
+    // }
     
     passphraseDisplay.textContent = passphrase;
     if (copyBtn) copyBtn.style.display = 'inline-block';
