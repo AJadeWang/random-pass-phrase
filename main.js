@@ -8,7 +8,7 @@ const wordLists = {
 };
 
 // Symbols list
-const symbols = ['!', '@', '#', '$', '%', '^', '&', '*', '?', '+', '=', '~', '|', ':', ';'];
+const symbols = ['!', '@', '#', '$', '%', '^', '&', '*', '?', '+', '='];
 
 // DOM Elements
 const passphraseDisplay = document.getElementById('passphraseDisplay');
