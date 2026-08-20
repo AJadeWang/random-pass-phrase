@@ -7,32 +7,39 @@
     <link rel="stylesheet" href="index_style.css">
 </head>
 <body>
+    <body>
     <div class="container">
-        <h1>🔐 Passphrase Generator</h1>
-        <p class="subtitle">Generate secure, memorable passphrases - no data stored</p>
+        <h1>🔐 Custom Passphrase Generator</h1>
+        <p class="subtitle">Build your passphrase with custom segments</p>
+
+        <!-- Passphrase Display -->
         <div class="passphrase-display" id="passphraseDisplay">Click generate to create your passphrase</div>
         <button class="btn-copy" id="copyBtn">📋 Copy to Clipboard</button>
-        <div class="controls">
-            <div class="control-group">
-                <label for="wordCount">Words: <span id="wordCountDisplay">4</span></label>
-                <input type="range" id="wordCount" min="2" max="8" value="4" step="1">
-                <input type="number" id="wordCountNumber" min="2" max="8" value="4">
+
+        <!-- Segments List -->
+        <div class="segments-section">
+            <div class="segments-header">
+                <h3>Passphrase Segments</h3>
+                <button class="btn-add" id="addSegmentBtn">+ Add Segment</button>
             </div>
-            <div class="control-group">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="withNumbers">
-                    <label for="withNumbers">Include numbers</label>
-                </div>
+            <div id="segmentsList" class="segments-list">
+                <!-- Segments will be rendered here -->
             </div>
         </div>
+
+        <!-- Generate Button -->
         <button class="btn-generate" id="generateBtn">✨ Generate Passphrase</button>
+
+        <!-- Strength Indicator -->
         <div class="strength-indicator">
             <div>Passphrase Strength</div>
-            <div class="strength-bar"><div class="strength-fill" id="strengthFill" style="width:100%;"></div></div>
+            <div class="strength-bar">
+                <div class="strength-fill" id="strengthFill" style="width: 100%;"></div>
+            </div>
         </div>
         <div class="footer">🚀 No data stored • All generation happens in your browser</div>
     </div>
-
+    
     <script src="main.js"></script>
 </body>
 </html>
