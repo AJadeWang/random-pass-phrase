@@ -1,4 +1,4 @@
-// Word lists for different types
+// Word lists for different types, used as fallback when connection to api can't be done
 const wordLists = {
     animals: ['elephant', 'tiger', 'dolphin', 'eagle', 'panther', 'falcon', 'raven', 'wolf', 'bear', 'fox', 'lion', 'turtle', 'shark', 'whale', 'eagle'],
     colors: ['crimson', 'azure', 'golden', 'emerald', 'ruby', 'sapphire', 'amber', 'violet', 'coral', 'indigo', 'scarlet', 'jade', 'onyx', 'pearl'],
@@ -32,6 +32,7 @@ const settingsContent = document.getElementById('settingsContent');
 const settingsArrow = document.querySelector('.settings-arrow');
 const separatorInput = document.getElementById('separator');
 const filterProfanityCheck = document.getElementById('filterProfanity');
+const autoCopyCheck = document.getElementById('autoCopy');
 
 let segments = [];
 let settings = {
@@ -146,9 +147,27 @@ function initializeWordCache() {
     refillWordCache();
 }
 
+// A secure, unbiased random integer generator
+function secureRandomInt(min, max) {
+    const range = max - min + 1;
+    // The maximum value we can use without introducing bias
+    const maxValid = Math.floor(0xFFFFFFFF / range) * range - 1;
+
+    let value;
+    do {
+        // Get a cryptographically secure random 32-bit integer
+        const array = new Uint32Array(1);
+        window.crypto.getRandomValues(array);
+        value = array[0];
+    } while (value > maxValid); // Reject and retry if the value is in the biased range [citation:9]
+
+    return min + (value % range);
+}
+
 // Get random item from array
 function getRandomItem(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
+    const randomIndex = secureRandomInt(0, arr.length - 1);
+    return arr[randomIndex];
 }
 
 // Generate a segment based on type and random length within min-max range
@@ -552,7 +571,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // NEW: Auto-copy setting
     if (autoCopyCheck) {
         autoCopyCheck.addEventListener('change', (e) => {
             settings.autoCopy = e.target.checked;
