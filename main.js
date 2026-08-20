@@ -28,7 +28,8 @@ const filterProfanityCheck = document.getElementById('filterProfanity');
 let segments = [];
 let settings = {
     separator: '',
-    filterProfanity: false
+    filterProfanity: false,
+    autoCopy: false
 };
 
 // Default segment types
@@ -259,6 +260,26 @@ function addSegment() {
     generatePassphrase();
 }
 
+// Copy to clipboard function
+function copyToClipboard() {
+    const text = passphraseDisplay.textContent;
+    if (text && text !== 'Add at least one segment' && text !== 'Click generate to create your passphrase') {
+        navigator.clipboard.writeText(text).then(() => {
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = '✅ Copied!';
+            setTimeout(() => { copyBtn.textContent = originalText; }, 2000);
+        }).catch(() => {
+            // Fallback method
+            const range = document.createRange();
+            range.selectNode(passphraseDisplay);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            document.execCommand('copy');
+            window.getSelection().removeAllRanges();
+        });
+    }
+}
+
 // Generate full passphrase
 function generatePassphrase() {
     if (!passphraseDisplay) return;
@@ -289,6 +310,11 @@ function generatePassphrase() {
     }, 10);
     
     updateStrength();
+    
+    // NEW: Auto-copy if enabled
+    if (settings.autoCopy) {
+        copyToClipboard();
+    }
 }
 
 // Update strength indicator
@@ -310,51 +336,65 @@ function updateStrength() {
     strengthFill.style.width = strength + '%';
 }
 
-// Copy to clipboard button
-copyBtn.addEventListener('click', () => {
-    const text = passphraseDisplay.textContent;
-    if (text && text !== 'Add at least one segment' && text !== 'Click generate to create your passphrase') {
-        navigator.clipboard.writeText(text).then(() => {
-            const originalText = copyBtn.textContent;
-            copyBtn.textContent = '✅ Copied!';
-            setTimeout(() => { copyBtn.textContent = originalText; }, 2000);
-        }).catch(() => {
-            const range = document.createRange();
-            range.selectNode(passphraseDisplay);
-            window.getSelection().removeAllRanges();
-            window.getSelection().addRange(range);
-            document.execCommand('copy');
-            window.getSelection().removeAllRanges();
-        });
-    }
-});
-
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize
     addDefaultSegments();
     
-    // Event listeners
-    addSegmentBtn.addEventListener('click', addSegment);
-    generateBtn.addEventListener('click', generatePassphrase);
-    copyBtn.addEventListener('click', () => {
-        const text = passphraseDisplay.textContent;
-        if (text && text !== 'Add at least one segment' && text !== 'Click generate to create your passphrase') {
-            navigator.clipboard.writeText(text).then(() => {
-                const originalText = copyBtn.textContent;
-                copyBtn.textContent = '✅ Copied!';
-                setTimeout(() => { copyBtn.textContent = originalText; }, 2000);
-            }).catch(() => {
-                const range = document.createRange();
-                range.selectNode(passphraseDisplay);
-                window.getSelection().removeAllRanges();
-                window.getSelection().addRange(range);
-                document.execCommand('copy');
-                window.getSelection().removeAllRanges();
-            });
-        }
-    });
-
+    // Settings toggle
+    if (settingsToggle) {
+        settingsToggle.addEventListener('click', toggleSettings);
+    }
+    
+    // Separator input
+    if (separatorInput) {
+        separatorInput.addEventListener('input', (e) => {
+            settings.separator = e.target.value || '-';
+            if (settings.separator.length === 0) {
+                settings.separator = '-';
+                e.target.value = '-';
+            }
+            generatePassphrase();
+        });
+    }
+    
+    // Profanity filter (placeholder)
+    if (filterProfanityCheck) {
+        filterProfanityCheck.addEventListener('change', (e) => {
+            settings.filterProfanity = e.target.checked;
+            generatePassphrase();
+        });
+    }
+    
+    // NEW: Auto-copy setting
+    if (autoCopyCheck) {
+        autoCopyCheck.addEventListener('change', (e) => {
+            settings.autoCopy = e.target.checked;
+            // If enabled, automatically copy the current phrase
+            if (settings.autoCopy && passphraseDisplay.textContent && 
+                passphraseDisplay.textContent !== 'Add at least one segment' &&
+                passphraseDisplay.textContent !== 'Click generate to create your passphrase') {
+                copyToClipboard();
+            }
+        });
+    }
+    
+    // Add segment button
+    if (addSegmentBtn) {
+        addSegmentBtn.addEventListener('click', addSegment);
+    }
+    
+    // Generate button
+    if (generateBtn) {
+        generateBtn.addEventListener('click', generatePassphrase);
+    }
+    
+    // Copy button
+    if (copyBtn) {
+        copyBtn.addEventListener('click', copyToClipboard);
+    }
+    
+    // Enter key support
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
             generatePassphrase();
