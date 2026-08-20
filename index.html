@@ -26,17 +26,6 @@
                 <div class="strength-fill" id="strengthFill" style="width: 100%;"></div>
             </div>
         </div>
-
-		<!-- Segments List -->
-		<div class="segments-section">
-    		<div class="segments-header">
-        		<h3>Passphrase Segments</h3>
-        		<button class="btn-add" id="addSegmentBtn">+ Add Segment</button>
-			</div>
-    		<div id="segmentsList" class="segments-list">
-        		<!-- Segments will be rendered here by JavaScript -->
-            </div>
-        </div>
 		
 		<!-- Settings Box -->
 		<div class="settings-box" id="settingsBox">
@@ -56,8 +45,26 @@
 					</label>
 					<span class="setting-note">(Coming soon)</span>
 				</div>
+			    <div class="setting-item">
+					<label>
+						<input type="checkbox" id="autoCopy">
+						Auto-copy generated phrase
+					</label>
+				</div>
     		</div>
 		</div>
+
+		<!-- Segments List -->
+		<div class="segments-section">
+    		<div class="segments-header">
+        		<h3>Passphrase Segments</h3>
+        		<button class="btn-add" id="addSegmentBtn">+ Add Segment</button>
+			</div>
+    		<div id="segmentsList" class="segments-list">
+        		<!-- Segments will be rendered here by JavaScript -->
+            </div>
+        </div>
+		
 		<div class="footer">🚀 No data stored • All generation happens in your browser</div>
     </div>
     
