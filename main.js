@@ -32,13 +32,21 @@ function getRandomItem(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// Generate a segment based on type and length
-function generateSegment(type, length) {
+// Generate a segment based on type and random length within min-max range
+function generateSegment(type, minLength, maxLength) {
+    // Random length between min and max
+    const length = Math.floor(Math.random() * (maxLength - minLength + 1)) + minLength;
+    
     switch (type) {
         case 'word':
             const allWords = Object.values(wordLists).flat();
-            const word = getRandomItem(allWords);
-            return word.charAt(0).toUpperCase() + word.slice(1);
+            let wordResult = '';
+            for (let i = 0; i < length; i++) {
+                const word = getRandomItem(allWords);
+                wordResult += word.charAt(0).toUpperCase() + word.slice(1);
+                if (i < length - 1) wordResult += '';
+            }
+            return wordResult;
         case 'number':
             let num = '';
             for (let i = 0; i < length; i++) {
@@ -58,6 +66,8 @@ function generateSegment(type, length) {
 
 // Render all segments
 function renderSegments() {
+    if (!segmentsList) return;
+    
     segmentsList.innerHTML = '';
     
     if (segments.length === 0) {
@@ -69,11 +79,13 @@ function renderSegments() {
         const div = document.createElement('div');
         div.className = 'segment-item';
         
+        // Index
         const indexSpan = document.createElement('span');
         indexSpan.className = 'segment-index';
         indexSpan.textContent = index + 1;
         div.appendChild(indexSpan);
         
+        // Type selector
         const select = document.createElement('select');
         segmentTypes.forEach(type => {
             const option = document.createElement('option');
@@ -87,42 +99,97 @@ function renderSegments() {
         select.addEventListener('change', (e) => {
             segment.type = e.target.value;
             if (segment.type === 'word') {
-                segment.length = 1;
+                segment.minLength = 1;
+                segment.maxLength = 5;
             } else if (segment.type === 'number') {
-                segment.length = 4;
+                segment.minLength = 3;
+                segment.maxLength = 6;
             } else if (segment.type === 'symbol') {
-                segment.length = 2;
+                segment.minLength = 1;
+                segment.maxLength = 3;
             }
             renderSegments();
             updateStrength();
         });
         div.appendChild(select);
         
+        // Length control with min-max sliders
         const lengthDiv = document.createElement('div');
         lengthDiv.className = 'length-control';
         
-        const lengthLabel = document.createElement('label');
-        lengthLabel.textContent = 'Length:';
-        lengthDiv.appendChild(lengthLabel);
+        const label = document.createElement('label');
+        label.textContent = `Length: ${segment.minLength} - ${segment.maxLength}`;
+        lengthDiv.appendChild(label);
         
-        const range = document.createElement('input');
-        range.type = 'range';
-        range.min = 1;
-        range.max = 20;
-        range.value = segment.length;
-        range.addEventListener('input', (e) => {
-            segment.length = parseInt(e.target.value);
-            lengthDisplay.textContent = segment.length;
+        const sliderContainer = document.createElement('div');
+        sliderContainer.className = 'range-slider-container';
+        
+        // Min slider
+        const minRange = document.createElement('input');
+        minRange.type = 'range';
+        minRange.className = 'min-range';
+        minRange.min = 1;
+        minRange.max = 20;
+        minRange.value = segment.minLength;
+        
+        // Max slider
+        const maxRange = document.createElement('input');
+        maxRange.type = 'range';
+        maxRange.className = 'max-range';
+        maxRange.min = 1;
+        maxRange.max = 20;
+        maxRange.value = segment.maxLength;
+        
+        // Track fill
+        const trackFill = document.createElement('div');
+        trackFill.className = 'track-fill';
+        
+        sliderContainer.appendChild(trackFill);
+        sliderContainer.appendChild(minRange);
+        sliderContainer.appendChild(maxRange);
+        lengthDiv.appendChild(sliderContainer);
+        
+        // Update track fill and labels
+        function updateRange() {
+            const minVal = parseInt(minRange.value);
+            const maxVal = parseInt(maxRange.value);
+            
+            // Ensure min <= max
+            if (minVal > maxVal) {
+                if (minRange === document.activeElement) {
+                    maxRange.value = minVal;
+                } else {
+                    minRange.value = maxVal;
+                }
+            }
+            
+            const finalMin = parseInt(minRange.value);
+            const finalMax = parseInt(maxRange.value);
+            
+            segment.minLength = finalMin;
+            segment.maxLength = finalMax;
+            
+            // Update label
+            label.textContent = `Length: ${finalMin} - ${finalMax}`;
+            
+            // Update track fill
+            const percentMin = ((finalMin - 1) / 19) * 100;
+            const percentMax = ((finalMax - 1) / 19) * 100;
+            trackFill.style.left = percentMin + '%';
+            trackFill.style.width = (percentMax - percentMin) + '%';
+            
             updateStrength();
-        });
-        lengthDiv.appendChild(range);
+        }
         
-        const lengthDisplay = document.createElement('span');
-        lengthDisplay.textContent = segment.length;
-        lengthDiv.appendChild(lengthDisplay);
+        minRange.addEventListener('input', updateRange);
+        maxRange.addEventListener('input', updateRange);
+        
+        // Initial track fill
+        setTimeout(updateRange, 10);
         
         div.appendChild(lengthDiv);
         
+        // Remove button
         const removeBtn = document.createElement('button');
         removeBtn.className = 'btn-remove';
         removeBtn.textContent = '✕';
@@ -139,7 +206,6 @@ function renderSegments() {
         segmentsList.appendChild(div);
     });
 }
-
 // Add default segments
 function addDefaultSegments() {
     segments = [
