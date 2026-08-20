@@ -119,7 +119,7 @@ function renderSegments() {
         minRange.className = 'min-range';
         minRange.min = 1;
         minRange.max = 20;
-        minRange.value = segment.minLength;
+        minRange.value = segment.minLength || 4;
         
         // Max slider
         const maxRange = document.createElement('input');
@@ -127,7 +127,7 @@ function renderSegments() {
         maxRange.className = 'max-range';
         maxRange.min = 1;
         maxRange.max = 20;
-        maxRange.value = segment.maxLength;
+        maxRange.value = segment.maxLength || 4;
         
         // Track fill
         const trackFill = document.createElement('div');
@@ -143,6 +143,7 @@ function renderSegments() {
             const minVal = parseInt(minRange.value);
             const maxVal = parseInt(maxRange.value);
             
+            // Ensure min <= max
             if (minVal > maxVal) {
                 if (minRange === document.activeElement) {
                     maxRange.value = minVal;
@@ -159,6 +160,7 @@ function renderSegments() {
             
             label.textContent = `Length: ${finalMin} - ${finalMax}`;
             
+            // Update track fill
             const percentMin = ((finalMin - 1) / 19) * 100;
             const percentMax = ((finalMax - 1) / 19) * 100;
             trackFill.style.left = percentMin + '%';
@@ -169,6 +171,8 @@ function renderSegments() {
         
         minRange.addEventListener('input', updateRange);
         maxRange.addEventListener('input', updateRange);
+        
+        // Initialize track fill
         setTimeout(updateRange, 10);
         
         div.appendChild(lengthDiv);
@@ -214,17 +218,19 @@ function addSegment() {
 
 // Generate full passphrase
 function generatePassphrase() {
+    if (!passphraseDisplay) return;
+    
     if (segments.length === 0) {
         passphraseDisplay.textContent = 'Add at least one segment';
-        copyBtn.style.display = 'none';
+        if (copyBtn) copyBtn.style.display = 'none';
         return;
     }
     
-    const passphraseParts = segments.map(seg => generateSegment(seg.type, seg.length));
+    const passphraseParts = segments.map(seg => generateSegment(seg.type, seg.minLength, seg.maxLength));
     const passphrase = passphraseParts.join('-');
     
     passphraseDisplay.textContent = passphrase;
-    copyBtn.style.display = 'inline-block';
+    if (copyBtn) copyBtn.style.display = 'inline-block';
     
     passphraseDisplay.style.animation = 'none';
     setTimeout(() => {
@@ -236,11 +242,14 @@ function generatePassphrase() {
 
 // Update strength indicator
 function updateStrength() {
+    if (!strengthFill) return;
+    
     let complexity = 0;
     segments.forEach(seg => {
-        if (seg.type === 'word') complexity += 5 * seg.length;
-        else if (seg.type === 'number') complexity += 2 * seg.length;
-        else if (seg.type === 'symbol') complexity += 3 * seg.length;
+        const avgLength = (seg.minLength + seg.maxLength) / 2;
+        if (seg.type === 'word') complexity += 5 * avgLength;
+        else if (seg.type === 'number') complexity += 2 * avgLength;
+        else if (seg.type === 'symbol') complexity += 3 * avgLength;
     });
     
     const types = new Set(segments.map(s => s.type));
@@ -250,7 +259,7 @@ function updateStrength() {
     strengthFill.style.width = strength + '%';
 }
 
-// Copy to clipboard
+// Copy to clipboard button
 copyBtn.addEventListener('click', () => {
     const text = passphraseDisplay.textContent;
     if (text && text !== 'Add at least one segment' && text !== 'Click generate to create your passphrase') {
