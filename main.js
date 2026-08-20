@@ -55,11 +55,7 @@ if (settingsToggle) {
 }
 if (separatorInput) {
     separatorInput.addEventListener('input', (e) => {
-        settings.separator = e.target.value || '-';
-        if (settings.separator.length === 0) {
-            settings.separator = '-';
-            e.target.value = '-';
-        }
+        settings.separator = e.target.value || '';
         generatePassphrase();
     });
 }
