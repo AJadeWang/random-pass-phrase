@@ -10,6 +10,14 @@ const wordLists = {
 // Symbols list
 const symbols = ['!', '@', '#', '$', '%', '^', '&', '*', '?', '+', '='];
 
+// API Configuration
+const WORD_API_URL = 'https://random-word-api.herokuapp.com/word';
+const WORD_CACHE_SIZE = 20; // Number of words to fetch at once
+
+// Word cache
+let wordCache = [];
+let isFetchingWords = false;
+
 // DOM Elements
 const passphraseDisplay = document.getElementById('passphraseDisplay');
 const generateBtn = document.getElementById('generateBtn');
@@ -76,25 +84,120 @@ if (filterProfanityCheck) {
     });
 }
 
+// Fetch words from external API
+async function fetchWordsFromAPI(count = 20) {
+    try {
+        const response = await fetch(`${WORD_API_URL}?number=${count}`);
+        if (!response.ok) throw new Error('API request failed');
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error fetching words:', error);
+        // Fallback to local word list if API fails
+        return getFallbackWords(count);
+    }
+}
+
+// Get fallback words from local list
+function getFallbackWords(count) {
+    const allWords = Object.values(wordLists).flat();
+    const result = [];
+    for (let i = 0; i < count; i++) {
+        result.push(getRandomItem(allWords));
+    }
+    return result;
+}
+
+// Refill word cache
+async function refillWordCache() {
+    if (isFetchingWords) return;
+    isFetchingWords = true;
+    
+    try {
+        const newWords = await fetchWordsFromAPI(WORD_CACHE_SIZE);
+        wordCache = newWords;
+        console.log(`Word cache refilled with ${wordCache.length} words`);
+    } catch (error) {
+        console.error('Failed to refill word cache:', error);
+    } finally {
+        isFetchingWords = false;
+    }
+}
+
+// Get a word from cache (refills if needed)
+async function getWordFromCache() {
+    // If cache is empty or low, refill
+    if (wordCache.length === 0) {
+        await refillWordCache();
+    }
+    
+    // If still empty after refill, use fallback
+    if (wordCache.length === 0) {
+        const allWords = Object.values(wordLists).flat();
+        return getRandomItem(allWords);
+    }
+    
+    // Remove and return a word from the cache
+    return wordCache.pop();
+}
+
+// Initialize word cache on page load
+function initializeWordCache() {
+    refillWordCache();
+}
+
 // Get random item from array
 function getRandomItem(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
 // Generate a segment based on type and random length within min-max range
-function generateSegment(type, minLength, maxLength, capitalization) {
+async function generateSegment(type, minLength, maxLength, capitalization) {
     // Random length between min and max
     const length = Math.floor(Math.random() * (maxLength - minLength + 1)) + minLength;
     
     switch (type) {
         case 'word':
-            const allWords = Object.values(wordLists).flat();
-            let wordResult = getRandomItem(allWords);
+            let wordResult = '';
             let attempts = 0;
-            while (wordResult.length < minLength ||  wordResult.length > maxLength || i < 20) {
+            const maxAttempts = 30;
+            
+            // Try to get a word that matches the length requirements
+            while (attempts < maxAttempts) {
                 attempts++;
+                let word = await getWordFromCache();
+                
+                // If cache is running low, trigger refill in background
+                if (wordCache.length < 5) {
+                    refillWordCache();
+                }
+                
+                // Check if word matches length criteria
+                if (word.length >= minLength && word.length <= maxLength) {
+                    wordResult = word;
+                    break;
+                }
+                
+                // If we've tried too many times, use fallback
+                if (attempts >= maxAttempts) {
+                    const allWords = Object.values(wordLists).flat();
+                    const fallbackWord = getRandomItem(allWords);
+                    if (fallbackWord.length >= minLength && fallbackWord.length <= maxLength) {
+                        wordResult = fallbackWord;
+                    } else {
+                        // Last resort: use a word and trim/expand if needed
+                        wordResult = fallbackWord;
+                    }
+                    break;
+                }
+            }
+            
+            // If no word found, use fallback
+            if (!wordResult) {
+                const allWords = Object.values(wordLists).flat();
                 wordResult = getRandomItem(allWords);
             }
+            
             // Apply capitalization
             return applyCapitalization(wordResult, capitalization || 'capitalize');
         case 'number':
@@ -351,7 +454,7 @@ function copyToClipboard() {
 }
 
 // Generate full passphrase
-function generatePassphrase() {
+async function generatePassphrase() {
     if (!passphraseDisplay) return;
     
     if (segments.length === 0) {
@@ -360,30 +463,42 @@ function generatePassphrase() {
         return;
     }
     
+    // Show loading state
+    passphraseDisplay.textContent = 'Generating...';
+    
     // Get the separator from settings
     const separator = settings.separator || '-';
     
-    const passphraseParts = segments.map(seg => generateSegment(seg.type, seg.minLength, seg.maxLength));
-    const passphrase = passphraseParts.join(separator);
-    
-    // Placeholder for profanity filter
-    // if (settings.filterProfanity && containsExplicitWords(passphrase)) {
-    //     Regenerate or handle profanity
-    // }
-    
-    passphraseDisplay.textContent = passphrase;
-    if (copyBtn) copyBtn.style.display = 'inline-block';
-    
-    passphraseDisplay.style.animation = 'none';
-    setTimeout(() => {
-        passphraseDisplay.style.animation = 'fadeIn 0.3s ease';
-    }, 10);
-    
-    updateStrength();
-
-    // Automatic copy on generate
-    if (settings.autoCopy) {
-        copyToClipboard();
+    try {
+        const passphraseParts = await Promise.all(
+            segments.map(async (seg) => {
+                if (seg.type === 'word') {
+                    return await generateSegment(seg.type, seg.minLength, seg.maxLength, seg.capitalization);
+                } else {
+                    return generateSegment(seg.type, seg.minLength, seg.maxLength);
+                }
+            })
+        );
+        
+        const passphrase = passphraseParts.join(separator);
+        
+        passphraseDisplay.textContent = passphrase;
+        if (copyBtn) copyBtn.style.display = 'inline-block';
+        
+        passphraseDisplay.style.animation = 'none';
+        setTimeout(() => {
+            passphraseDisplay.style.animation = 'fadeIn 0.3s ease';
+        }, 10);
+        
+        updateStrength();
+        
+        // Automatic copy on generate
+        if (settings.autoCopy) {
+            copyToClipboard();
+        }
+    } catch (error) {
+        console.error('Error generating passphrase:', error);
+        passphraseDisplay.textContent = 'Error generating passphrase. Please try again.';
     }
 }
 
@@ -410,6 +525,7 @@ function updateStrength() {
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize
     addDefaultSegments();
+    initializeWordCache();
     
     // Settings toggle
     if (settingsToggle) {
@@ -454,7 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
         addSegmentBtn.addEventListener('click', addSegment);
     }
     
-    // Generate button
+   // Generate button
     if (generateBtn) {
         generateBtn.addEventListener('click', generatePassphrase);
     }
