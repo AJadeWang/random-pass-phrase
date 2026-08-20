@@ -237,3 +237,70 @@ h1 { color: #333; font-size: 28px; margin-bottom: 10px; text-align: center; }
 		flex-wrap: wrap;
 	}
 }
+
+/* Range slider container */
+.range-slider-container {
+    position: relative;
+    width: 100%;
+    max-width: 200px;
+    height: 30px;
+}
+
+.range-slider-container input[type="range"] {
+    position: absolute;
+    width: 100%;
+    height: 6px;
+    pointer-events: none;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+}
+
+.range-slider-container input[type="range"]::-webkit-slider-thumb {
+    pointer-events: auto;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #667eea;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    margin-top: -6px;
+}
+
+.range-slider-container input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    background: #e9ecef;
+    border-radius: 3px;
+}
+
+.range-slider-container input[type="range"]::-moz-range-thumb {
+    pointer-events: auto;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #667eea;
+    cursor: pointer;
+    border: 2px solid white;
+}
+
+.range-slider-container .min-range {
+    z-index: 2;
+}
+
+.range-slider-container .max-range {
+    z-index: 1;
+}
+
+/* Track fill between min and max */
+.range-slider-container .track-fill {
+    position: absolute;
+    height: 6px;
+    background: #667eea;
+    border-radius: 3px;
+    top: 12px;
+    pointer-events: none;
+    z-index: 0;
+}
