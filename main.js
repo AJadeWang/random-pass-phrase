@@ -44,7 +44,6 @@ function generateSegment(type, minLength, maxLength) {
             for (let i = 0; i < length; i++) {
                 const word = getRandomItem(allWords);
                 wordResult += word.charAt(0).toUpperCase() + word.slice(1);
-                if (i < length - 1) wordResult += '';
             }
             return wordResult;
         case 'number':
@@ -98,22 +97,12 @@ function renderSegments() {
         });
         select.addEventListener('change', (e) => {
             segment.type = e.target.value;
-            if (segment.type === 'word') {
-                segment.minLength = 1;
-                segment.maxLength = 5;
-            } else if (segment.type === 'number') {
-                segment.minLength = 3;
-                segment.maxLength = 6;
-            } else if (segment.type === 'symbol') {
-                segment.minLength = 1;
-                segment.maxLength = 3;
-            }
             renderSegments();
             updateStrength();
         });
         div.appendChild(select);
         
-        // Length control with min-max sliders
+        // Min-Max slider for ALL types
         const lengthDiv = document.createElement('div');
         lengthDiv.className = 'length-control';
         
@@ -149,12 +138,11 @@ function renderSegments() {
         sliderContainer.appendChild(maxRange);
         lengthDiv.appendChild(sliderContainer);
         
-        // Update track fill and labels
+        // Update range function
         function updateRange() {
             const minVal = parseInt(minRange.value);
             const maxVal = parseInt(maxRange.value);
             
-            // Ensure min <= max
             if (minVal > maxVal) {
                 if (minRange === document.activeElement) {
                     maxRange.value = minVal;
@@ -169,10 +157,8 @@ function renderSegments() {
             segment.minLength = finalMin;
             segment.maxLength = finalMax;
             
-            // Update label
             label.textContent = `Length: ${finalMin} - ${finalMax}`;
             
-            // Update track fill
             const percentMin = ((finalMin - 1) / 19) * 100;
             const percentMax = ((finalMax - 1) / 19) * 100;
             trackFill.style.left = percentMin + '%';
@@ -183,8 +169,6 @@ function renderSegments() {
         
         minRange.addEventListener('input', updateRange);
         maxRange.addEventListener('input', updateRange);
-        
-        // Initial track fill
         setTimeout(updateRange, 10);
         
         div.appendChild(lengthDiv);
@@ -206,13 +190,14 @@ function renderSegments() {
         segmentsList.appendChild(div);
     });
 }
+
 // Add default segments
 function addDefaultSegments() {
     segments = [
-        { type: 'word', length: 1 },
-        { type: 'word', length: 1 },
-        { type: 'number', length: 4 },
-        { type: 'word', length: 1 }
+        { type: 'word', minLength: 4, maxLength: 8 },
+        { type: 'number', minLength: 4, maxLength:4 },
+        { type: 'word', minLength: 4, maxLength: 8 },
+        { type: 'symbol', minLength: 1, maxLength:1 },
     ];
     renderSegments();
     updateStrength();
@@ -221,7 +206,7 @@ function addDefaultSegments() {
 
 // Add new segment
 function addSegment() {
-    segments.push({ type: 'word', length: 1 });
+    segments.push({ type: 'word', minLength: 4,  maxLength: 8 });
     renderSegments();
     updateStrength();
     generatePassphrase();
