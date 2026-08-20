@@ -420,6 +420,17 @@ h1 {
     font-size: 12px;
     font-style: italic;
 }
+
+/* Auto-copy active indicator */
+.auto-copy-active .passphrase-display {
+    border-color: #28a745;
+    background: #f0fff4;
+}
+
+.setting-item input[type="checkbox"]:checked + label {
+    color: #28a745;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
     .container {
