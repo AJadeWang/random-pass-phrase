@@ -39,6 +39,15 @@ const segmentTypes = [
     { value: 'symbol', label: 'Symbol' }
 ];
 
+// Capitalization options (for Word type only)
+const capitalizationOptions = [
+    { value: 'capitalize', label: 'Capitalize' },
+    { value: 'uppercase', label: 'ALL CAPS' },
+    { value: 'lowercase', label: 'lowercase' },
+    { value: 'allrandom', label: 'AllRaNdOm' },
+    { value: 'onerandom', label: 'randoMone' }
+];
+
 // Settings toggle
 function toggleSettings() {
     if (settingsContent) {
@@ -73,19 +82,21 @@ function getRandomItem(arr) {
 }
 
 // Generate a segment based on type and random length within min-max range
-function generateSegment(type, minLength, maxLength) {
+function generateSegment(type, minLength, maxLength, capitalization) {
     // Random length between min and max
     const length = Math.floor(Math.random() * (maxLength - minLength + 1)) + minLength;
     
     switch (type) {
         case 'word':
             const allWords = Object.values(wordLists).flat();
-            let wordResult = '';
-            for (let i = 0; i < length; i++) {
-                const word = getRandomItem(allWords);
-                wordResult += word.charAt(0).toUpperCase() + word.slice(1);
+            let wordResult = getRandomItem(allWords);
+            let attempts = 0;
+            while (wordResult.length < minLength ||  wordResult.length > maxLength || i < 20) {
+                attempts++;
+                wordResult = getRandomItem(allWords);
             }
-            return wordResult;
+            // Apply capitalization
+            return applyCapitalization(wordResult, capitalization || 'capitalize');
         case 'number':
             let num = '';
             for (let i = 0; i < length; i++) {
@@ -100,6 +111,38 @@ function generateSegment(type, minLength, maxLength) {
             return sym;
         default:
             return '';
+    }
+}
+
+// Apply capitalization to a word
+function applyCapitalization(word, style) {
+    switch (style) {
+        case 'capitalize':
+            return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        case 'uppercase':
+            return word.toUpperCase();
+        case 'lowercase':
+            return word.toLowerCase();
+        case 'allrandom':
+            let result = '';
+            for (let i = 0; i < word.length; i++) {
+                if (Math.random() > 0.5) {
+                    result += word[i].toUpperCase();
+                } else {
+                    result += word[i].toLowerCase();
+                }
+            }
+            return result;
+        case 'onerandom':
+            if (word.length === 0) return word;
+            if (word.length === 1) return word.toUpperCase();
+            
+            const index = Math.floor(Math.random() * word.length);
+            const chars = word.toLowerCase().split('');
+            chars[index] = chars[index].toUpperCase();
+            return chars.join('');
+        default:
+            return word;
     }
 }
 
@@ -137,10 +180,41 @@ function renderSegments() {
         });
         select.addEventListener('change', (e) => {
             segment.type = e.target.value;
+            // Add default capitalization for new word segments
+            if (segment.type === 'word' && !segment.capitalization) {
+                segment.capitalization = 'capitalize';
+            }
             renderSegments();
             updateStrength();
         });
         div.appendChild(select);
+        
+        // Capitalization dropdown (ONLY for Word type)
+        if (segment.type === 'word') {
+            const capDiv = document.createElement('div');
+            capDiv.className = 'capitalization-control';
+            
+            const capSelect = document.createElement('select');
+            capSelect.className = 'capitalization-select';
+            
+            capitalizationOptions.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                option.textContent = opt.label;
+                if (segment.capitalization === opt.value) {
+                    option.selected = true;
+                }
+                capSelect.appendChild(option);
+            });
+            
+            capSelect.addEventListener('change', (e) => {
+                segment.capitalization = e.target.value;
+                generatePassphrase();
+            });
+            
+            capDiv.appendChild(capSelect);
+            div.appendChild(capDiv);
+        }
         
         // Min-Max slider for ALL types
         const lengthDiv = document.createElement('div');
@@ -158,7 +232,7 @@ function renderSegments() {
         minRange.type = 'range';
         minRange.className = 'min-range';
         minRange.min = 1;
-        minRange.max = 20;
+        minRange.max = 14;
         minRange.value = segment.minLength || 4;
         
         // Max slider
@@ -166,7 +240,7 @@ function renderSegments() {
         maxRange.type = 'range';
         maxRange.className = 'max-range';
         maxRange.min = 1;
-        maxRange.max = 20;
+        maxRange.max = 14;
         maxRange.value = segment.maxLength || 4;
         
         // Track fill
@@ -238,9 +312,9 @@ function renderSegments() {
 // Add default segments
 function addDefaultSegments() {
     segments = [
-        { type: 'word', minLength: 4, maxLength: 8 },
-        { type: 'number', minLength: 4, maxLength:4 },
-        { type: 'word', minLength: 4, maxLength: 8 },
+        { type: 'word', minLength: 4, maxLength: 8, capitalization: 'capitalize' },
+        { type: 'number', minLength: 4, maxLength:4},
+        { type: 'word', minLength: 4, maxLength: 8, capitalization: 'lowercase' },
         { type: 'symbol', minLength: 1, maxLength:1 },
     ];
     renderSegments();
@@ -250,7 +324,7 @@ function addDefaultSegments() {
 
 // Add new segment
 function addSegment() {
-    segments.push({ type: 'word', minLength: 4,  maxLength: 8 });
+    segments.push({ type: 'word', minLength: 4,  maxLength: 8, capitalization: 'lowercase' });
     renderSegments();
     updateStrength();
     generatePassphrase();
@@ -294,7 +368,7 @@ function generatePassphrase() {
     
     // Placeholder for profanity filter
     // if (settings.filterProfanity && containsExplicitWords(passphrase)) {
-    //     // Regenerate or handle profanity
+    //     Regenerate or handle profanity
     // }
     
     passphraseDisplay.textContent = passphrase;
@@ -306,8 +380,8 @@ function generatePassphrase() {
     }, 10);
     
     updateStrength();
-    
-    // NEW: Auto-copy if enabled
+
+    // Automatic copy on generate
     if (settings.autoCopy) {
         copyToClipboard();
     }
