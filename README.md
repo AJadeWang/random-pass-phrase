@@ -23,10 +23,9 @@ A zero-data-storage passphrase generator built with PHP and deployed to Firebase
 3. Add FIREBASE_TOKEN as GitHub secret
 4. Push to main branch
 
-## Live Demonstration
-[Link to firebase link](https://random-pass-phrase.web.app/)
-Or https://random-pass-phrase.web.app/
+## Live Web App Demonstration
+[Click Here](https://random-pass-phrase.web.app/)
+Or
 ```
-
-## Web App View
-[Link to secure live website](https://random-pass-phrase.web.app)
+https://random-pass-phrase.web.app/
+```
