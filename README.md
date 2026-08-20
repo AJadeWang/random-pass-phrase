@@ -1,6 +1,6 @@
 # Secure Passphrase Generator
 
-A zero-data-storage passphrase generator built with PHP and deployed to Firebase Hosting.
+A zero-data-storage passphrase generator built with vanilla HTML, JavaScript, and CSS for a single lightweight web app deployed to Firebase Hosting.
 
 ## Features
 
