@@ -233,11 +233,11 @@ h1 {
 
 /* Z-index ordering */
 .range-slider-container .min-range {
-    z-index: 1;
+    z-index: 2;
 }
 
 .range-slider-container .max-range {
-    z-index: 2;
+    z-index: 1;
 }
 
 /* Track fill between min and max */
