@@ -18,6 +18,7 @@ const WORD_CACHE_SIZE = 20; // Number of words to fetch at once
 let wordCache = [];
 let isFetchingWords = false;
 const maxSegSize = 14;
+let profanityList = [];
 
 // DOM Elements
 const passphraseDisplay = document.getElementById('passphraseDisplay');
@@ -78,13 +79,6 @@ if (separatorInput) {
         generatePassphrase();
     });
 }
-if (filterProfanityCheck) {
-    filterProfanityCheck.addEventListener('change', (e) => {
-        settings.filterProfanity = e.target.checked;
-        // Placeholder for future profanity filter function
-        generatePassphrase();
-    });
-}
 
 // Fetch words from external API
 async function fetchWordsFromAPI(count = 20) {
@@ -98,6 +92,40 @@ async function fetchWordsFromAPI(count = 20) {
         // Fallback to local word list if API fails
         return getFallbackWords(count);
     }
+}
+
+// Function to fetch the profanity list and convert it to an array
+async function loadProfanityList() {
+    try {
+        // Fetch the JSON file from a CDN (e.g., unpkg or cdnjs)
+        const response = await fetch('https://cdn.jsdelivr.net/npm/naughty-words/en.json');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        // Parse the JSON data into a JavaScript array
+        const profanityArray = await response.json();
+        
+        console.log('Profanity list loaded:', profanityArray);
+        return profanityArray;
+    } catch (error) {
+        console.error('Failed to load profanity list:', error);
+        return []; // Return empty array if loading fails
+    }
+}
+
+function isProfane(word, profanityArray) {
+    // Convert to lowercase for case-insensitive matching
+    const wordToCheck = word.toLowerCase();
+    return profanityArray.includes(wordToCheck);
+}
+
+if (filterProfanityCheck) {
+    filterProfanityCheck.addEventListener('change', (e) => {
+        settings.filterProfanity = e.target.checked;
+        generatePassphrase();
+    });
 }
 
 // Get fallback words from local list
@@ -117,6 +145,7 @@ async function refillWordCache() {
     
     try {
         const newWords = await fetchWordsFromAPI(WORD_CACHE_SIZE);
+        newWords.map
         wordCache = newWords;
         console.log(`Word cache refilled with ${wordCache.length} words`);
     } catch (error) {
@@ -180,10 +209,11 @@ async function generateSegment(type, minLength, maxLength, capitalization) {
         case 'word':
             let wordResult = '';
             let attempts = 0;
-            const maxAttempts = 30;
+            const maxAttempts = 60;
+            let isClean = false;
             
-            // Try to get a word that matches the length requirements
-            while (attempts < maxAttempts) {
+            // Try to get a word that matches the length requirements and is not profane
+            while (!isClean && attempts < maxAttempts) {
                 attempts++;
                 let word = await getWordFromCache();
                 
@@ -194,21 +224,63 @@ async function generateSegment(type, minLength, maxLength, capitalization) {
                 
                 // Check if word matches length criteria
                 if (word.length >= minLength && word.length <= maxLength) {
-                    wordResult = word;
-                    break;
+                    // Check if word contains profanity (if filter is enabled)
+                    if (settings.filterProfanity && profanitySet.size > 0) {
+                        const wordLower = word.toLowerCase();
+                        // Check exact match and substring match
+                        let hasProfanity = false;
+                        if (profanitySet.has(wordLower)) {
+                            hasProfanity = true;
+                        } else {
+                            for (const badWord of profanitySet) {
+                                if (wordLower.includes(badWord)) {
+                                    hasProfanity = true;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (!hasProfanity) {
+                            wordResult = word;
+                            isClean = true;
+                        }
+                        // If profane, continue to next attempt (discard this word)
+                    } else {
+                        // No profanity filter, accept immediately
+                        wordResult = word;
+                        isClean = true;
+                    }
                 }
                 
                 // If we've tried too many times, use fallback
-                if (attempts >= maxAttempts) {
+                if (!isClean && attempts >= maxAttempts) {
                     const allWords = Object.values(wordLists).flat();
-                    const fallbackWord = getRandomItem(allWords);
-                    if (fallbackWord.length >= minLength && fallbackWord.length <= maxLength) {
-                        wordResult = fallbackWord;
-                    } else {
-                        // Last resort: use a word and trim/expand if needed
-                        wordResult = fallbackWord;
+                    // Try to find a clean word from local list
+                    let fallbackWord = null;
+                    for (const w of allWords) {
+                        const wLower = w.toLowerCase();
+                        if (w.length >= minLength && w.length <= maxLength) {
+                            if (settings.filterProfanity && profanitySet.size > 0) {
+                                let hasProfanity = false;
+                                for (const badWord of profanitySet) {
+                                    if (wLower.includes(badWord)) {
+                                        hasProfanity = true;
+                                        break;
+                                    }
+                                }
+                                if (!hasProfanity) {
+                                    fallbackWord = w;
+                                    break;
+                                }
+                            } else {
+                                fallbackWord = w;
+                                break;
+                            }
+                        }
                     }
-                    break;
+                    
+                    wordResult = fallbackWord || getRandomItem(allWords);
+                    isClean = true;
                 }
             }
             
@@ -217,7 +289,7 @@ async function generateSegment(type, minLength, maxLength, capitalization) {
                 const allWords = Object.values(wordLists).flat();
                 wordResult = getRandomItem(allWords);
             }
-            
+    
             // Apply capitalization
             return applyCapitalization(wordResult, capitalization || 'capitalize');
         case 'number':
