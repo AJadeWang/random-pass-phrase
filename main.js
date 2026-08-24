@@ -19,6 +19,7 @@ let wordCache = [];
 let isFetchingWords = false;
 const maxSegSize = 14;
 let profanityList = [];
+let profanitySet = new Set();
 
 // DOM Elements
 const passphraseDisplay = document.getElementById('passphraseDisplay');
@@ -39,7 +40,7 @@ const autoCopyCheck = document.getElementById('autoCopy');
 let segments = [];
 let settings = {
     separator: '',
-    filterProfanity: false,
+    filterProfanity: true,
     autoCopy: false
 };
 
@@ -94,24 +95,30 @@ async function fetchWordsFromAPI(count = 20) {
     }
 }
 
-// Function to fetch the profanity list and convert it to an array
 async function loadProfanityList() {
     try {
-        // Fetch the JSON file from a CDN (e.g., unpkg or cdnjs)
         const response = await fetch('https://cdn.jsdelivr.net/npm/naughty-words/en.json');
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        // Parse the JSON data into a JavaScript array
         const profanityArray = await response.json();
         
-        console.log('Profanity list loaded:', profanityArray);
-        return profanityArray;
+        // Store the raw array (if needed elsewhere)
+        profanityList = profanityArray;
+        
+        // Filter out words with spaces AND convert to lowercase
+        const filteredList = profanityArray
+            .filter(word => !word.includes(' '))  // Remove multi-word phrases
+            .map(word => word.toLowerCase());     // Convert to lowercase
+        
+        // Convert to Set for fast lookups
+        profanitySet = new Set(filteredList);
+        
+        const removedCount = profanityArray.length - filteredList.length;
+        console.log(`Loaded ${profanitySet.size} profane words (removed ${removedCount} multi-word phrases)`);
+        return profanitySet;
     } catch (error) {
         console.error('Failed to load profanity list:', error);
-        return []; // Return empty array if loading fails
+        profanityList = [];
+        profanitySet = new Set();
+        return new Set();
     }
 }
 
