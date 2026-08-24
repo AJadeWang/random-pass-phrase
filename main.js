@@ -17,7 +17,7 @@ const WORD_CACHE_SIZE = 20; // Number of words to fetch at once
 // Word cache
 let wordCache = [];
 let isFetchingWords = false;
-const maxSegSize = 14;
+const maxSegSize = 11;
 let profanityList = [];
 let profanitySet = new Set();
 
@@ -227,7 +227,8 @@ function getRandomItem(arr) {
 // Generate a segment based on type and random length within min-max range
 async function generateSegment(type, minLength, maxLength, capitalization) {
     // Random length between min and max
-    const length = Math.floor(Math.random() * (maxLength - minLength + 1)) + minLength;
+    const effectiveMax = maxLength >= maxSegSize ? 20 : maxLength; // 20 is used as a practical max size
+    const length = Math.floor(Math.random() * (effectiveMax - minLength + 1)) + minLength;
     
     switch (type) {
         case 'word':
@@ -247,7 +248,7 @@ async function generateSegment(type, minLength, maxLength, capitalization) {
                 }
                 
                 // Check if word matches length criteria
-                if (word.length >= minLength && word.length <= maxLength) {
+                if (word.length >= minLength && word.length <= effectiveMax) {
                     // Check if word contains profanity (if filter is enabled)
                     if (settings.filterProfanity && profanitySet.size > 0) {
                         const wordLower = word.toLowerCase();
@@ -283,7 +284,7 @@ async function generateSegment(type, minLength, maxLength, capitalization) {
                     let fallbackWord = null;
                     for (const w of allWords) {
                         const wLower = w.toLowerCase();
-                        if (w.length >= minLength && w.length <= maxLength) {
+                        if (w.length >= minLength && w.length <= effectiveMax) {
                             if (settings.filterProfanity && profanitySet.size > 0) {
                                 let hasProfanity = false;
                                 for (const badWord of profanitySet) {
@@ -440,7 +441,7 @@ function renderSegments() {
         lengthDiv.className = 'length-control';
         
         const label = document.createElement('label');
-        label.textContent = `Length: ${segment.minLength} - ${segment.maxLength}`;
+        label.textContent = `Length: ${segment.minLength} - ${segment.effectiveMax}`;
         lengthDiv.appendChild(label);
         
         const sliderContainer = document.createElement('div');
@@ -490,12 +491,14 @@ function renderSegments() {
             
             segment.minLength = finalMin;
             segment.maxLength = finalMax;
+
+            // Update label - show "No Limit" if max is 11+
+            let minDisplay = finalMin;
+            let maxDisplay = finalMax >= 11 ? '∞' : finalMax;
+            label.textContent = `Length: ${minDisplay} - ${maxDisplay}`;
             
-            label.textContent = `Length: ${finalMin} - ${finalMax}`;
-            
-            // Update track fill - using maxSegSize instead of hardcoded 20
-            const maxSegSize = 14; // Your max value
-            const range = maxSegSize - 1; // 14 - 1 = 13
+            // Update track fill
+            const range = maxSegSize - 1;
             const percentMin = ((finalMin - 1) / range) * 100;
             const percentMax = ((finalMax - 1) / range) * 100;
             trackFill.style.left = percentMin + '%';
