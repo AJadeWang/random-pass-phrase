@@ -329,6 +329,38 @@ h1 {
     color: #999;
     font-size: 12px;
 }
+/* Contact links and privacy note */
+.contact-link {
+    margin-top: 10px;
+}
+
+.contact-link a {
+    color: #667eea;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s ease;
+}
+
+.contact-link a:hover {
+    color: #764ba2;
+    text-decoration: underline;
+}
+
+.contact-note {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #888;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 3px solid #28a745;
+    text-align: left;
+    line-height: 1.5;
+}
+
+.contact-note strong {
+    color: #333;
+}
 
 /* Security Note */
 .security-note {
