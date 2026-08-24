@@ -115,17 +115,34 @@ async function loadProfanityList() {
     }
 }
 
-function isProfane(word, profanityArray) {
-    // Convert to lowercase for case-insensitive matching
-    const wordToCheck = word.toLowerCase();
-    return profanityArray.includes(wordToCheck);
-}
-
 if (filterProfanityCheck) {
     filterProfanityCheck.addEventListener('change', (e) => {
         settings.filterProfanity = e.target.checked;
         generatePassphrase();
     });
+}
+
+// Check if a word is profane
+function isWordProfane(word) {
+    if (!settings.filterProfanity || profanitySet.size === 0) {
+        return false;
+    }
+    
+    const wordLower = word.toLowerCase();
+    
+    // Exact match check
+    if (profanitySet.has(wordLower)) {
+        return true;
+    }
+    
+    // Substring check (catches words like "assassin" containing "ass")
+    for (const badWord of profanitySet) {
+        if (wordLower.includes(badWord)) {
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 // Get fallback words from local list
@@ -620,6 +637,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize
     addDefaultSegments();
     initializeWordCache();
+    if (filterProfanityCheck && filterProfanityCheck.checked) {
+        loadProfanityList();
+    } else {
+        // Preload in background anyway
+        loadProfanityList();
+    }
     
     // Settings toggle
     if (settingsToggle) {
@@ -638,7 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Profanity filter (placeholder)
+    // Profanity filter
     if (filterProfanityCheck) {
         filterProfanityCheck.addEventListener('change', (e) => {
             settings.filterProfanity = e.target.checked;
