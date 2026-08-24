@@ -253,13 +253,12 @@ h1 {
 
 /* Track fill between min and max */
 .range-slider-container .track-fill {
-    position: absolute;
+    position: relative;
     height: 6px;
     background: #667eea;
     border-radius: 3px;
-    top: 12px;
     pointer-events: none;
-    z-index: 0;
+    z-index: 2;
 }
 
 /* Remove Button */
