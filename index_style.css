@@ -37,7 +37,6 @@ h1 {
     font-size: 14px;
 }
 
-/* Passphrase Display */
 .passphrase-display {
     background: #f8f9fa;
     border: 2px solid #e9ecef;
@@ -61,7 +60,6 @@ h1 {
     background: #f0f2ff;
 }
 
-/* Copy Button */
 .btn-copy {
     background: #28a745;
     color: white;
@@ -79,7 +77,6 @@ h1 {
     background: #218838;
 }
 
-/* Segments Section */
 .segments-section {
     margin-bottom: 25px;
 }
@@ -117,7 +114,6 @@ h1 {
     gap: 10px;
 }
 
-/* Segment Item */
 .segment-item {
     background: #f8f9fa;
     border: 2px solid #e9ecef;
@@ -166,102 +162,70 @@ h1 {
     color: #666;
 }
 
-/* Range Slider Container */
 .range-slider-container {
     position: relative;
     width: 100%;
     max-width: 200px;
-    height: 30px;
+    height: 40px;
+    touch-action: none;
 }
 
-.range-slider-container input[type="range"] {
+.slider-track {
     position: absolute;
-    width: 100%;
-    height: 6px;
-    pointer-events: none;
-    -webkit-appearance: none;
-    appearance: none;
-    background: transparent;
-}
-
-.range-slider-container input[type="range"]::-webkit-slider-thumb {
-    pointer-events: auto;
-    -webkit-appearance: none;
-    appearance: none;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #667eea;
-    cursor: pointer;
-    border: 2px solid white;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-    margin-top: -6px;
-    z-index: 3;
-    position: relative;
-}
-
-.range-slider-container input[type="range"]::-webkit-slider-runnable-track {
+    top: 50%;
+    left: 0;
+    right: 0;
     height: 6px;
     background: #e9ecef;
     border-radius: 3px;
+    transform: translateY(-50%);
 }
 
-.range-slider-container input[type="range"]::-moz-range-thumb {
-    pointer-events: auto;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
+.slider-fill {
+    position: absolute;
+    top: 50%;
+    height: 6px;
     background: #667eea;
+    border-radius: 3px;
+    transform: translateY(-50%);
+}
+
+.slider-handle {
+    position: absolute;
+    top: 50%;
+    width: 24px;
+    height: 24px;
+    background: #667eea;
+    border: 3px solid white;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
     cursor: pointer;
-    border: 2px solid white;
-    z-index: 3;
-    position: relative;
-}
-
-/* Make min slider's track transparent so it doesn't cover max slider */
-.range-slider-container .min-range::-webkit-slider-runnable-track {
-    background: transparent !important;
-}
-
-.range-slider-container .min-range::-moz-range-track {
-    background: transparent !important;
-}
-
-.range-slider-container .min-range::-ms-track {
-    background: transparent !important;
-}
-
-/* Z-index ordering */
-.range-slider-container .min-range {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: white;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
     z-index: 2;
 }
 
-.range-slider-container .max-range {
+.slider-handle:active {
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+.slider-handle.min-handle {
+    background: #667eea;
+    z-index: 3;
+}
+
+.slider-handle.max-handle {
+    background: #667eea;
     z-index: 1;
 }
 
-/* Track fill between min and max */
-.range-slider-container .track-fill {
-    position: absolute;
-    height: 6px;
-    background: #667eea;
-    border-radius: 3px;
-    top: 6px;
-    pointer-events: none;
-    z-index: 0;
-}
-
-/* Track fill between min and max */
-.range-slider-container .track-fill {
-    position: relative;
-    height: 6px;
-    background: #667eea;
-    border-radius: 3px;
-    pointer-events: none;
-    z-index: 2;
-}
-
-/* Remove Button */
 .segment-item .btn-remove {
     background: #dc3545;
     color: white;
@@ -277,7 +241,6 @@ h1 {
     background: #c82333;
 }
 
-/* Generate Button */
 .btn-generate {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -296,7 +259,6 @@ h1 {
     box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
 }
 
-/* Strength Indicator */
 .strength-indicator {
     margin-top: 20px;
     padding: 15px;
@@ -329,7 +291,7 @@ h1 {
     color: #999;
     font-size: 12px;
 }
-/* Contact links and privacy note */
+
 .contact-link {
     margin-top: 10px;
 }
@@ -362,7 +324,6 @@ h1 {
     color: #333;
 }
 
-/* Security Note */
 .security-note {
     margin-top: 10px;
     font-size: 12px;
@@ -379,7 +340,6 @@ h1 {
     color: #333;
 }
 
-/* Settings Box */
 .settings-box {
     background: #f8f9fa;
     border: 2px solid #e9ecef;
@@ -470,17 +430,6 @@ h1 {
     font-style: italic;
 }
 
-/* Auto-copy active indicator */
-.auto-copy-active .passphrase-display {
-    border-color: #28a745;
-    background: #f0fff4;
-}
-
-.setting-item input[type="checkbox"]:checked + label {
-    color: #28a745;
-}
-
-/* Responsive */
 @media (max-width: 600px) {
     .container {
         padding: 20px;
@@ -502,6 +451,13 @@ h1 {
 
     .range-slider-container {
         max-width: 100%;
+        height: 50px;
+    }
+
+    .slider-handle {
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
     }
 }
 
