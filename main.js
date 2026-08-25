@@ -347,17 +347,17 @@ function createSlider(segment, label, updateCallback) {
     
     const minHandle = document.createElement('div');
     minHandle.className = 'slider-handle min-handle';
+    minHandle.textContent = '◀';
     sliderContainer.appendChild(minHandle);
     
     const maxHandle = document.createElement('div');
     maxHandle.className = 'slider-handle max-handle';
+    maxHandle.textContent = '▶';
     sliderContainer.appendChild(maxHandle);
     
     let activeHandle = null;
     let isDragging = false;
-    let startX = 0;
-    let startMin = 0;
-    let startMax = 0;
+    let hasChanged = false;
     
     function getSliderPosition(clientX) {
         const rect = track.getBoundingClientRect();
@@ -383,11 +383,7 @@ function createSlider(segment, label, updateCallback) {
     function startDrag(e, handle) {
         activeHandle = handle;
         isDragging = true;
-        
-        const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-        startX = clientX;
-        startMin = segment.minLength;
-        startMax = segment.maxLength;
+        hasChanged = false;
         
         document.addEventListener('mousemove', onDrag);
         document.addEventListener('mouseup', endDrag);
@@ -402,25 +398,30 @@ function createSlider(segment, label, updateCallback) {
         const value = Math.round(1 + percent * (maxSegSize - 1));
         const clampedValue = Math.max(1, Math.min(maxSegSize, value));
         
+        let oldMin = segment.minLength;
+        let oldMax = segment.maxLength;
+        
         if (activeHandle === 'min') {
-            // Allow min to go up to maxSegSize, and push max forward if needed
             if (clampedValue <= maxSegSize) {
                 segment.minLength = clampedValue;
-                // If min passes max, push max forward
                 if (segment.minLength > segment.maxLength) {
                     segment.maxLength = segment.minLength;
                 }
             }
         } else if (activeHandle === 'max') {
-            // Allow max to go down to 1, and push min backward if needed
             if (clampedValue >= 1) {
                 segment.maxLength = clampedValue;
-                // If max goes below min, pull min backward
                 if (segment.maxLength < segment.minLength) {
                     segment.minLength = segment.maxLength;
                 }
             }
         }
+        
+        // Check if values actually changed
+        if (oldMin !== segment.minLength || oldMax !== segment.maxLength) {
+            hasChanged = true;
+        }
+        
         updateHandlePositions();
         if (updateCallback) updateCallback();
     }
@@ -437,6 +438,12 @@ function createSlider(segment, label, updateCallback) {
         document.removeEventListener('mouseup', endDrag);
         document.removeEventListener('touchmove', onDragTouch);
         document.removeEventListener('touchend', endDrag);
+        
+        // Only generate passphrase if values actually changed
+        if (hasChanged) {
+            generatePassphrase();
+            hasChanged = false;
+        }
     }
     
     minHandle.addEventListener('mousedown', (e) => startDrag(e, 'min'));
