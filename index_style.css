@@ -238,43 +238,19 @@ h1 {
 }
 
 .slider-handle.min-handle {
-    border-left: 14px solid transparent;
-    border-right: 14px solid transparent;
-    border-bottom: 24px solid #667eea;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 18px solid #667eea;
     transform: translate(-50%, 0%);
     z-index: 3;
 }
 
-.slider-handle.min-handle::after {
-    content: '';
-    position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 2px;
-    height: 8px;
-    background: #667eea;
-    border-radius: 1px;
-}
-
 .slider-handle.max-handle {
-    border-left: 14px solid transparent;
-    border-right: 14px solid transparent;
-    border-top: 24px solid #667eea;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 18px solid #667eea;
     transform: translate(-50%, -100%);
     z-index: 1;
-}
-
-.slider-handle.max-handle::after {
-    content: '';
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 2px;
-    height: 8px;
-    background: #667eea;
-    border-radius: 1px;
 }
 
 .slider-handle:active {
