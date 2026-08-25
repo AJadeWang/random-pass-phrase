@@ -347,12 +347,10 @@ function createSlider(segment, label, updateCallback) {
     
     const minHandle = document.createElement('div');
     minHandle.className = 'slider-handle min-handle';
-    minHandle.textContent = '◀';
     sliderContainer.appendChild(minHandle);
     
     const maxHandle = document.createElement('div');
     maxHandle.className = 'slider-handle max-handle';
-    maxHandle.textContent = '▶';
     sliderContainer.appendChild(maxHandle);
     
     let activeHandle = null;
