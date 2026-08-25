@@ -347,16 +347,17 @@ function createSlider(segment, label, updateCallback) {
     
     const minHandle = document.createElement('div');
     minHandle.className = 'slider-handle min-handle';
-    minHandle.textContent = '◀';
     sliderContainer.appendChild(minHandle);
     
     const maxHandle = document.createElement('div');
     maxHandle.className = 'slider-handle max-handle';
-    maxHandle.textContent = '▶';
     sliderContainer.appendChild(maxHandle);
     
     let activeHandle = null;
     let isDragging = false;
+    let startX = 0;
+    let startMin = 0;
+    let startMax = 0;
     
     function getSliderPosition(clientX) {
         const rect = track.getBoundingClientRect();
@@ -384,7 +385,9 @@ function createSlider(segment, label, updateCallback) {
         isDragging = true;
         
         const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-        onDrag({ clientX: clientX });
+        startX = clientX;
+        startMin = segment.minLength;
+        startMax = segment.maxLength;
         
         document.addEventListener('mousemove', onDrag);
         document.addEventListener('mouseup', endDrag);
@@ -400,12 +403,22 @@ function createSlider(segment, label, updateCallback) {
         const clampedValue = Math.max(1, Math.min(maxSegSize, value));
         
         if (activeHandle === 'min') {
-            if (clampedValue <= segment.maxLength) {
+            // Allow min to go up to maxSegSize, and push max forward if needed
+            if (clampedValue <= maxSegSize) {
                 segment.minLength = clampedValue;
+                // If min passes max, push max forward
+                if (segment.minLength > segment.maxLength) {
+                    segment.maxLength = segment.minLength;
+                }
             }
         } else if (activeHandle === 'max') {
-            if (clampedValue >= segment.minLength) {
+            // Allow max to go down to 1, and push min backward if needed
+            if (clampedValue >= 1) {
                 segment.maxLength = clampedValue;
+                // If max goes below min, pull min backward
+                if (segment.maxLength < segment.minLength) {
+                    segment.minLength = segment.maxLength;
+                }
             }
         }
         updateHandlePositions();
