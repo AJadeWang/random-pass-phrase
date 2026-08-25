@@ -12,7 +12,7 @@ const symbols = ['!', '@', '#', '$', '%', '^', '&', '*', '?', '+', '='];
 
 // API Configuration
 const WORD_API_URL = 'https://random-word-api.herokuapp.com/word';
-const WORD_CACHE_SIZE = 20; // Number of words to fetch at once
+const WORD_CACHE_SIZE = 20;
 
 // Word cache
 let wordCache = [];
@@ -90,7 +90,6 @@ async function fetchWordsFromAPI(count = 20) {
         return data;
     } catch (error) {
         console.error('Error fetching words:', error);
-        // Fallback to local word list if API fails
         return getFallbackWords(count);
     }
 }
@@ -100,15 +99,12 @@ async function loadProfanityList() {
         const response = await fetch('https://cdn.jsdelivr.net/npm/naughty-words/en.json');
         const profanityArray = await response.json();
         
-        // Store the raw array (if needed elsewhere)
         profanityList = profanityArray;
         
-        // Filter out words with spaces AND convert to lowercase
         const filteredList = profanityArray
-            .filter(word => !word.includes(' '))  // Remove multi-word phrases
-            .map(word => word.toLowerCase());     // Convert to lowercase
+            .filter(word => !word.includes(' '))
+            .map(word => word.toLowerCase());
         
-        // Convert to Set for fast lookups
         profanitySet = new Set(filteredList);
         
         const removedCount = profanityArray.length - filteredList.length;
@@ -129,7 +125,6 @@ if (filterProfanityCheck) {
     });
 }
 
-// Check if a word is profane
 function isWordProfane(word) {
     if (!settings.filterProfanity || profanitySet.size === 0) {
         return false;
@@ -137,12 +132,10 @@ function isWordProfane(word) {
     
     const wordLower = word.toLowerCase();
     
-    // Exact match check
     if (profanitySet.has(wordLower)) {
         return true;
     }
     
-    // Substring check (catches words like "assassin" containing "ass")
     for (const badWord of profanitySet) {
         if (wordLower.includes(badWord)) {
             return true;
@@ -152,7 +145,6 @@ function isWordProfane(word) {
     return false;
 }
 
-// Get fallback words from local list
 function getFallbackWords(count) {
     const allWords = Object.values(wordLists).flat();
     const result = [];
@@ -162,14 +154,12 @@ function getFallbackWords(count) {
     return result;
 }
 
-// Refill word cache
 async function refillWordCache() {
     if (isFetchingWords) return;
     isFetchingWords = true;
     
     try {
         const newWords = await fetchWordsFromAPI(WORD_CACHE_SIZE);
-        newWords.map
         wordCache = newWords;
         console.log(`Word cache refilled with ${wordCache.length} words`);
     } catch (error) {
@@ -179,55 +169,44 @@ async function refillWordCache() {
     }
 }
 
-// Get a word from cache (refills if needed)
 async function getWordFromCache() {
-    // If cache is empty or low, refill
     if (wordCache.length === 0) {
         await refillWordCache();
     }
     
-    // If still empty after refill, use fallback
     if (wordCache.length === 0) {
         const allWords = Object.values(wordLists).flat();
         return getRandomItem(allWords);
     }
     
-    // Remove and return a word from the cache
     return wordCache.pop();
 }
 
-// Initialize word cache on page load
 function initializeWordCache() {
     refillWordCache();
 }
 
-// A secure, unbiased random integer generator
 function secureRandomInt(min, max) {
     const range = max - min + 1;
-    // The maximum value we can use without introducing bias
     const maxValid = Math.floor(0xFFFFFFFF / range) * range - 1;
 
     let value;
     do {
-        // Get a cryptographically secure random 32-bit integer
         const array = new Uint32Array(1);
         window.crypto.getRandomValues(array);
         value = array[0];
-    } while (value > maxValid); // Reject and retry if the value is in the biased range [citation:9]
+    } while (value > maxValid);
 
     return min + (value % range);
 }
 
-// Get random item from array
 function getRandomItem(arr) {
     const randomIndex = secureRandomInt(0, arr.length - 1);
     return arr[randomIndex];
 }
 
-// Generate a segment based on type and random length within min-max range
 async function generateSegment(type, minLength, maxLength, capitalization) {
-    // Random length between min and max
-    const effectiveMax = maxLength >= maxSegSize ? 20 : maxLength; // 20 is used as a practical max size
+    const effectiveMax = maxLength >= maxSegSize ? 20 : maxLength;
     const length = Math.floor(Math.random() * (effectiveMax - minLength + 1)) + minLength;
     
     switch (type) {
@@ -237,22 +216,17 @@ async function generateSegment(type, minLength, maxLength, capitalization) {
             const maxAttempts = 60;
             let isClean = false;
             
-            // Try to get a word that matches the length requirements and is not profane
             while (!isClean && attempts < maxAttempts) {
                 attempts++;
                 let word = await getWordFromCache();
                 
-                // If cache is running low, trigger refill in background
                 if (wordCache.length < 5) {
                     refillWordCache();
                 }
                 
-                // Check if word matches length criteria
                 if (word.length >= minLength && word.length <= effectiveMax) {
-                    // Check if word contains profanity (if filter is enabled)
                     if (settings.filterProfanity && profanitySet.size > 0) {
                         const wordLower = word.toLowerCase();
-                        // Check exact match and substring match
                         let hasProfanity = false;
                         if (profanitySet.has(wordLower)) {
                             hasProfanity = true;
@@ -269,18 +243,14 @@ async function generateSegment(type, minLength, maxLength, capitalization) {
                             wordResult = word;
                             isClean = true;
                         }
-                        // If profane, continue to next attempt (discard this word)
                     } else {
-                        // No profanity filter, accept immediately
                         wordResult = word;
                         isClean = true;
                     }
                 }
                 
-                // If we've tried too many times, use fallback
                 if (!isClean && attempts >= maxAttempts) {
                     const allWords = Object.values(wordLists).flat();
-                    // Try to find a clean word from local list
                     let fallbackWord = null;
                     for (const w of allWords) {
                         const wLower = w.toLowerCase();
@@ -309,13 +279,11 @@ async function generateSegment(type, minLength, maxLength, capitalization) {
                 }
             }
             
-            // If no word found, use fallback
             if (!wordResult) {
                 const allWords = Object.values(wordLists).flat();
                 wordResult = getRandomItem(allWords);
             }
     
-            // Apply capitalization
             return applyCapitalization(wordResult, capitalization || 'capitalize');
         case 'number':
             let num = '';
@@ -334,7 +302,6 @@ async function generateSegment(type, minLength, maxLength, capitalization) {
     }
 }
 
-// Apply capitalization to a word
 function applyCapitalization(word, style) {
     switch (style) {
         case 'capitalize':
@@ -366,7 +333,109 @@ function applyCapitalization(word, style) {
     }
 }
 
-// Render all segments
+function createSlider(segment, label, updateCallback) {
+    const sliderContainer = document.createElement('div');
+    sliderContainer.className = 'range-slider-container';
+    
+    const track = document.createElement('div');
+    track.className = 'slider-track';
+    sliderContainer.appendChild(track);
+    
+    const fill = document.createElement('div');
+    fill.className = 'slider-fill';
+    sliderContainer.appendChild(fill);
+    
+    const minHandle = document.createElement('div');
+    minHandle.className = 'slider-handle min-handle';
+    minHandle.textContent = '◀';
+    sliderContainer.appendChild(minHandle);
+    
+    const maxHandle = document.createElement('div');
+    maxHandle.className = 'slider-handle max-handle';
+    maxHandle.textContent = '▶';
+    sliderContainer.appendChild(maxHandle);
+    
+    let activeHandle = null;
+    let isDragging = false;
+    
+    function getSliderPosition(clientX) {
+        const rect = track.getBoundingClientRect();
+        let percent = (clientX - rect.left) / rect.width;
+        percent = Math.max(0, Math.min(1, percent));
+        return percent;
+    }
+    
+    function updateHandlePositions() {
+        const minPercent = (segment.minLength - 1) / (maxSegSize - 1);
+        const maxPercent = (segment.maxLength - 1) / (maxSegSize - 1);
+        
+        minHandle.style.left = (minPercent * 100) + '%';
+        maxHandle.style.left = (maxPercent * 100) + '%';
+        fill.style.left = (minPercent * 100) + '%';
+        fill.style.width = ((maxPercent - minPercent) * 100) + '%';
+        
+        let minDisplay = segment.minLength;
+        let maxDisplay = segment.maxLength >= maxSegSize ? '∞' : segment.maxLength;
+        label.textContent = `Length: ${minDisplay} - ${maxDisplay}`;
+    }
+    
+    function startDrag(e, handle) {
+        activeHandle = handle;
+        isDragging = true;
+        
+        const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+        onDrag({ clientX: clientX });
+        
+        document.addEventListener('mousemove', onDrag);
+        document.addEventListener('mouseup', endDrag);
+        document.addEventListener('touchmove', onDragTouch);
+        document.addEventListener('touchend', endDrag);
+        e.preventDefault();
+    }
+    
+    function onDrag(e) {
+        if (!isDragging || !activeHandle) return;
+        const percent = getSliderPosition(e.clientX);
+        const value = Math.round(1 + percent * (maxSegSize - 1));
+        const clampedValue = Math.max(1, Math.min(maxSegSize, value));
+        
+        if (activeHandle === 'min') {
+            if (clampedValue <= segment.maxLength) {
+                segment.minLength = clampedValue;
+            }
+        } else if (activeHandle === 'max') {
+            if (clampedValue >= segment.minLength) {
+                segment.maxLength = clampedValue;
+            }
+        }
+        updateHandlePositions();
+        if (updateCallback) updateCallback();
+    }
+    
+    function onDragTouch(e) {
+        const touch = e.touches[0];
+        onDrag({ clientX: touch.clientX });
+    }
+    
+    function endDrag() {
+        activeHandle = null;
+        isDragging = false;
+        document.removeEventListener('mousemove', onDrag);
+        document.removeEventListener('mouseup', endDrag);
+        document.removeEventListener('touchmove', onDragTouch);
+        document.removeEventListener('touchend', endDrag);
+    }
+    
+    minHandle.addEventListener('mousedown', (e) => startDrag(e, 'min'));
+    maxHandle.addEventListener('mousedown', (e) => startDrag(e, 'max'));
+    minHandle.addEventListener('touchstart', (e) => startDrag(e, 'min'));
+    maxHandle.addEventListener('touchstart', (e) => startDrag(e, 'max'));
+    
+    updateHandlePositions();
+    
+    return sliderContainer;
+}
+
 function renderSegments() {
     if (!segmentsList) return;
     
@@ -381,13 +450,11 @@ function renderSegments() {
         const div = document.createElement('div');
         div.className = 'segment-item';
         
-        // Index
         const indexSpan = document.createElement('span');
         indexSpan.className = 'segment-index';
         indexSpan.textContent = index + 1;
         div.appendChild(indexSpan);
         
-        // Type selector
         const select = document.createElement('select');
         segmentTypes.forEach(type => {
             const option = document.createElement('option');
@@ -400,7 +467,6 @@ function renderSegments() {
         });
         select.addEventListener('change', (e) => {
             segment.type = e.target.value;
-            // Add default capitalization for new word segments
             if (segment.type === 'word' && !segment.capitalization) {
                 segment.capitalization = 'capitalize';
             }
@@ -409,7 +475,6 @@ function renderSegments() {
         });
         div.appendChild(select);
         
-        // Capitalization dropdown (ONLY for Word type)
         if (segment.type === 'word') {
             const capDiv = document.createElement('div');
             capDiv.className = 'capitalization-control';
@@ -436,86 +501,21 @@ function renderSegments() {
             div.appendChild(capDiv);
         }
         
-        // Min-Max slider for ALL types
         const lengthDiv = document.createElement('div');
         lengthDiv.className = 'length-control';
         
         const label = document.createElement('label');
-        label.textContent = `Length: ${segment.minLength} - ${segment.effectiveMax}`;
+        label.textContent = `Length: ${segment.minLength} - ${segment.maxLength >= maxSegSize ? '∞' : segment.maxLength}`;
         lengthDiv.appendChild(label);
         
-        const sliderContainer = document.createElement('div');
-        sliderContainer.className = 'range-slider-container';
-        
-        // Min slider
-        const minRange = document.createElement('input');
-        minRange.type = 'range';
-        minRange.className = 'min-range';
-        minRange.min = 1;
-        minRange.max = maxSegSize;
-        minRange.value = segment.minLength || 4;
-        
-        // Max slider
-        const maxRange = document.createElement('input');
-        maxRange.type = 'range';
-        maxRange.className = 'max-range';
-        maxRange.min = 1;
-        maxRange.max = maxSegSize;
-        maxRange.value = segment.maxLength || 4;
-        
-        // Track fill
-        const trackFill = document.createElement('div');
-        trackFill.className = 'track-fill';
-        
-        sliderContainer.appendChild(trackFill);
-        sliderContainer.appendChild(minRange);
-        sliderContainer.appendChild(maxRange);
-        lengthDiv.appendChild(sliderContainer);
-        
-        // Update range function
-        function updateRange() {
-            const minVal = parseInt(minRange.value);
-            const maxVal = parseInt(maxRange.value);
-            
-            // Ensure min <= max
-            if (minVal > maxVal) {
-                if (minRange === document.activeElement) {
-                    maxRange.value = minVal;
-                } else {
-                    minRange.value = maxVal;
-                }
-            }
-            
-            const finalMin = parseInt(minRange.value);
-            const finalMax = parseInt(maxRange.value);
-            
-            segment.minLength = finalMin;
-            segment.maxLength = finalMax;
-
-            // Update label - show "No Limit" if max is 11+
-            let minDisplay = finalMin;
-            let maxDisplay = finalMax >= 11 ? '∞' : finalMax;
-            label.textContent = `Length: ${minDisplay} - ${maxDisplay}`;
-            
-            // Update track fill
-            const range = maxSegSize - 1;
-            const percentMin = ((finalMin - 1) / range) * 100;
-            const percentMax = ((finalMax - 1) / range) * 100;
-            trackFill.style.left = percentMin + '%';
-            trackFill.style.width = (percentMax - percentMin) + '%';
-            
+        const slider = createSlider(segment, label, () => {
             updateStrength();
-        }
-        
-        minRange.addEventListener('input', updateRange);
-        maxRange.addEventListener('input', updateRange);
-        
-        // Initialize track fill
-        setTimeout(updateRange, 10);
+            generatePassphrase();
+        });
+        lengthDiv.appendChild(slider);
         
         div.appendChild(lengthDiv);
         
-        // Remove button
         const removeBtn = document.createElement('button');
         removeBtn.className = 'btn-remove';
         removeBtn.textContent = '✕';
@@ -533,28 +533,25 @@ function renderSegments() {
     });
 }
 
-// Add default segments
 function addDefaultSegments() {
     segments = [
         { type: 'word', minLength: 4, maxLength: 8, capitalization: 'capitalize' },
-        { type: 'number', minLength: 2, maxLength:2},
+        { type: 'number', minLength: 2, maxLength: 2 },
         { type: 'word', minLength: 4, maxLength: 8, capitalization: 'lowercase' },
-        { type: 'symbol', minLength: 1, maxLength:1 },
+        { type: 'symbol', minLength: 1, maxLength: 1 },
     ];
     renderSegments();
     updateStrength();
     generatePassphrase();
 }
 
-// Add new segment
 function addSegment() {
-    segments.push({ type: 'word', minLength: 4,  maxLength: 8, capitalization: 'lowercase' });
+    segments.push({ type: 'word', minLength: 4, maxLength: 8, capitalization: 'lowercase' });
     renderSegments();
     updateStrength();
     generatePassphrase();
 }
 
-// Copy to clipboard function
 function copyToClipboard() {
     const text = passphraseDisplay.textContent;
     if (text && text !== 'Add at least one segment' && text !== 'Click generate to create your passphrase') {
@@ -563,7 +560,6 @@ function copyToClipboard() {
             copyBtn.textContent = '✅ Copied!';
             setTimeout(() => { copyBtn.textContent = originalText; }, 2000);
         }).catch(() => {
-            // Fallback method
             const range = document.createRange();
             range.selectNode(passphraseDisplay);
             window.getSelection().removeAllRanges();
@@ -574,7 +570,6 @@ function copyToClipboard() {
     }
 }
 
-// Generate full passphrase
 async function generatePassphrase() {
     if (!passphraseDisplay) return;
     
@@ -584,10 +579,8 @@ async function generatePassphrase() {
         return;
     }
     
-    // Show loading state
     passphraseDisplay.textContent = 'Generating...';
     
-    // Get the separator from settings
     const separator = settings.separator;
     
     try {
@@ -613,7 +606,6 @@ async function generatePassphrase() {
         
         updateStrength();
         
-        // Automatic copy on generate
         if (settings.autoCopy) {
             copyToClipboard();
         }
@@ -623,7 +615,6 @@ async function generatePassphrase() {
     }
 }
 
-// Update strength indicator
 function updateStrength() {
     if (!strengthFill) return;
     
@@ -642,36 +633,26 @@ function updateStrength() {
     strengthFill.style.width = strength + '%';
 }
 
-// Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize
     addDefaultSegments();
     initializeWordCache();
     if (filterProfanityCheck && filterProfanityCheck.checked) {
         loadProfanityList();
     } else {
-        // Preload in background anyway
         loadProfanityList();
     }
     
-    // Settings toggle
     if (settingsToggle) {
         settingsToggle.addEventListener('click', toggleSettings);
     }
     
-    // Separator input
     if (separatorInput) {
         separatorInput.addEventListener('input', (e) => {
-            settings.separator = e.target.value || '-';
-            if (settings.separator.length === 0) {
-                settings.separator = '-';
-                e.target.value = '-';
-            }
+            settings.separator = e.target.value || '';
             generatePassphrase();
         });
     }
     
-    // Profanity filter
     if (filterProfanityCheck) {
         filterProfanityCheck.addEventListener('change', (e) => {
             settings.filterProfanity = e.target.checked;
@@ -682,7 +663,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (autoCopyCheck) {
         autoCopyCheck.addEventListener('change', (e) => {
             settings.autoCopy = e.target.checked;
-            // If enabled, automatically copy the current phrase
             if (settings.autoCopy && passphraseDisplay.textContent && 
                 passphraseDisplay.textContent !== 'Add at least one segment' &&
                 passphraseDisplay.textContent !== 'Click generate to create your passphrase') {
@@ -691,22 +671,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Add segment button
     if (addSegmentBtn) {
         addSegmentBtn.addEventListener('click', addSegment);
     }
     
-   // Generate button
     if (generateBtn) {
         generateBtn.addEventListener('click', generatePassphrase);
     }
     
-    // Copy button
     if (copyBtn) {
         copyBtn.addEventListener('click', copyToClipboard);
     }
     
-    // Enter key support
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
             generatePassphrase();
