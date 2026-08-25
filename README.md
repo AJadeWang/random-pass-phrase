@@ -28,7 +28,7 @@ Designed for **mass on-boarding and off-boarding** scenarios, such as:
 - 🚫 **Profanity Filter**: Optional filter to reject explicit words
 - 🌐 **No Data Storage**: Zero server-side logging or tracking
 
-## Technical Stack
+## 🛠️ Technical Stack
 
 ### Core Technologies
 - **Firebase Hosting** - Static site hosting with automatic HTTPS
@@ -42,14 +42,14 @@ Designed for **mass on-boarding and off-boarding** scenarios, such as:
 - **Web Crypto API** - `window.crypto.getRandomValues()` - Cryptographically secure random number generation using the browser's underlying OS entropy
 - **Rejection Sampling** - Bias-free random selection from word lists
 
-## Deployment
+## 📫 Deployment
 
 1. Fork this repository
 2. Set up Firebase project
 3. Add FIREBASE_TOKEN as GitHub secret
 4. Push to main branch
 
-## Live Web App Demonstration
+## 🚀 Live Web App Demonstration
 [Try it here](https://random-pass-phrase.web.app/)
 ```
 https://random-pass-phrase.web.app/
