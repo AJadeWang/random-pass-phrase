@@ -468,6 +468,15 @@ function renderSegments() {
         indexSpan.textContent = index + 1;
         div.appendChild(indexSpan);
         
+        // Type label and selector
+        const typeWrapper = document.createElement('div');
+        typeWrapper.className = 'segment-field';
+        
+        const typeLabel = document.createElement('label');
+        typeLabel.className = 'segment-label';
+        typeLabel.textContent = 'Type';
+        typeWrapper.appendChild(typeLabel);
+        
         const select = document.createElement('select');
         segmentTypes.forEach(type => {
             const option = document.createElement('option');
@@ -486,11 +495,18 @@ function renderSegments() {
             renderSegments();
             updateStrength();
         });
-        div.appendChild(select);
+        typeWrapper.appendChild(select);
+        div.appendChild(typeWrapper);
         
+        // Capitalization (ONLY for Word type)
         if (segment.type === 'word') {
-            const capDiv = document.createElement('div');
-            capDiv.className = 'capitalization-control';
+            const capWrapper = document.createElement('div');
+            capWrapper.className = 'segment-field';
+            
+            const capLabel = document.createElement('label');
+            capLabel.className = 'segment-label';
+            capLabel.textContent = 'Format';
+            capWrapper.appendChild(capLabel);
             
             const capSelect = document.createElement('select');
             capSelect.className = 'capitalization-select';
@@ -510,20 +526,21 @@ function renderSegments() {
                 generatePassphrase();
             });
             
-            capDiv.appendChild(capSelect);
-            div.appendChild(capDiv);
+            capWrapper.appendChild(capSelect);
+            div.appendChild(capWrapper);
         }
         
+        // Length control
         const lengthDiv = document.createElement('div');
         lengthDiv.className = 'length-control';
         
         const label = document.createElement('label');
+        label.className = 'segment-label';
         label.textContent = `Length: ${segment.minLength} - ${segment.maxLength >= maxSegSize ? '∞' : segment.maxLength}`;
         lengthDiv.appendChild(label);
         
         const slider = createSlider(segment, label, () => {
             updateStrength();
-            generatePassphrase();
         });
         lengthDiv.appendChild(slider);
         
