@@ -588,15 +588,18 @@ function addSegment() {
 }
 
 function copyToClipboard() {
-    const text = passphraseDisplay.textContent;
-    if (text && text !== 'Add at least one segment' && text !== 'Click generate to create your passphrase') {
+    const textSpan = passphraseDisplay.querySelector('.passphrase-text');
+    if (!textSpan) return;
+    
+    const text = textSpan.textContent;
+    if (text && text !== 'Add at least one segment' && text !== 'Click generate to create your passphrase' && text !== 'Generating...') {
         navigator.clipboard.writeText(text).then(() => {
             const originalText = copyBtn.textContent;
             copyBtn.textContent = '✅ Copied!';
             setTimeout(() => { copyBtn.textContent = originalText; }, 2000);
         }).catch(() => {
             const range = document.createRange();
-            range.selectNode(passphraseDisplay);
+            range.selectNode(textSpan);
             window.getSelection().removeAllRanges();
             window.getSelection().addRange(range);
             document.execCommand('copy');
@@ -609,12 +612,16 @@ async function generatePassphrase() {
     if (!passphraseDisplay) return;
     
     if (segments.length === 0) {
-        passphraseDisplay.textContent = 'Add at least one segment';
-        if (copyBtn) copyBtn.style.display = 'none';
+        const textSpan = passphraseDisplay.querySelector('.passphrase-text');
+        if (textSpan) textSpan.textContent = 'Add at least one segment';
+        if (copyBtn) copyBtn.classList.remove('visible');
         return;
     }
     
-    passphraseDisplay.textContent = 'Generating...';
+    const textSpan = passphraseDisplay.querySelector('.passphrase-text');
+    if (!textSpan) return;
+    
+    textSpan.textContent = 'Generating...';
     
     const separator = settings.separator;
     
@@ -631,12 +638,16 @@ async function generatePassphrase() {
         
         const passphrase = passphraseParts.join(separator);
         
-        passphraseDisplay.textContent = passphrase;
-        if (copyBtn) copyBtn.style.display = 'inline-block';
+        textSpan.textContent = passphrase;
+        if (copyBtn) {
+            copyBtn.classList.add('visible');
+            copyBtn.textContent = '📋 Copy';
+        }
         
-        passphraseDisplay.style.animation = 'none';
+        // Animation
+        textSpan.style.animation = 'none';
         setTimeout(() => {
-            passphraseDisplay.style.animation = 'fadeIn 0.3s ease';
+            textSpan.style.animation = 'fadeIn 0.3s ease';
         }, 10);
         
         updateStrength();
@@ -646,10 +657,9 @@ async function generatePassphrase() {
         }
     } catch (error) {
         console.error('Error generating passphrase:', error);
-        passphraseDisplay.textContent = 'Error generating passphrase. Please try again.';
+        textSpan.textContent = 'Error generating passphrase. Please try again.';
     }
 }
-
 function updateStrength() {
     if (!strengthFill) return;
     
