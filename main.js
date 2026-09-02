@@ -260,84 +260,45 @@ async function generateSegment(type, minLength, maxLength, capitalization) {
                 attempts++;
                 let word;
                 
-                // Check if simple words is enabled
+                // Check if simple words is enabled AND loaded
                 if (settings.simpleWords && isSimpleWordsLoaded && simpleWordList.length > 0) {
-                    // Use simple word list (with random selection)
-                    const allSimpleWords = simpleWordList;
-                    // Filter by length
-                    const filteredWords = allSimpleWords.filter(w => 
+                    // Use simple word list
+                    const filteredWords = simpleWordList.filter(w => 
                         w.length >= minLength && w.length <= effectiveMax
                     );
                     if (filteredWords.length > 0) {
                         word = getRandomItem(filteredWords);
                     } else {
-                        // Fallback to API if no simple words match length
-                        word = await getWordFromCache();
+                        // Fallback to local list if no simple words match length
+                        word = getRandomItem(Object.values(wordLists).flat());
                     }
                 } else {
-                    // Use API cache
+                    // Use API cache or fallback
                     word = await getWordFromCache();
                 }
                 
-                // If cache is running low, trigger refill in background
-                if (!settings.simpleWords && wordCache.length < 5) {
-                    refillWordCache();
+                if (!word) {
+                    word = getRandomItem(Object.values(wordLists).flat());
                 }
                 
-                // Check if word matches length criteria
+                // Check length and profanity
                 if (word && word.length >= minLength && word.length <= effectiveMax) {
-                    // Check profanity
-                    if (settings.filterProfanity && profanitySet.size > 0) {
-                        const wordLower = word.toLowerCase();
-                        let hasProfanity = false;
-                        if (profanitySet.has(wordLower)) {
-                            hasProfanity = true;
-                        } else {
-                            for (const badWord of profanitySet) {
-                                if (wordLower.includes(badWord)) {
-                                    hasProfanity = true;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        if (!hasProfanity) {
-                            wordResult = word;
-                            isClean = true;
-                        }
-                    } else {
+                    if (!isWordProfane(word)) {
                         wordResult = word;
                         isClean = true;
                     }
                 }
                 
+                // Fallback after max attempts
                 if (!isClean && attempts >= maxAttempts) {
                     const allWords = settings.simpleWords && isSimpleWordsLoaded ? 
                         simpleWordList : Object.values(wordLists).flat();
-                    let fallbackWord = null;
-                    for (const w of allWords) {
-                        const wLower = w.toLowerCase();
-                        if (w.length >= minLength && w.length <= effectiveMax) {
-                            if (settings.filterProfanity && profanitySet.size > 0) {
-                                let hasProfanity = false;
-                                for (const badWord of profanitySet) {
-                                    if (wLower.includes(badWord)) {
-                                        hasProfanity = true;
-                                        break;
-                                    }
-                                }
-                                if (!hasProfanity) {
-                                    fallbackWord = w;
-                                    break;
-                                }
-                            } else {
-                                fallbackWord = w;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    wordResult = fallbackWord || getRandomItem(allWords);
+                    const safeWords = allWords.filter(w => 
+                        w.length >= minLength && 
+                        w.length <= effectiveMax && 
+                        !isWordProfane(w)
+                    );
+                    wordResult = safeWords.length > 0 ? getRandomItem(safeWords) : getRandomItem(allWords);
                     isClean = true;
                 }
             }
@@ -347,7 +308,7 @@ async function generateSegment(type, minLength, maxLength, capitalization) {
                     simpleWordList : Object.values(wordLists).flat();
                 wordResult = getRandomItem(allWords);
             }
-    
+        
             return applyCapitalization(wordResult, capitalization || 'capitalize');
         case 'number':
             let num = '';
