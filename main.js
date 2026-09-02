@@ -28,6 +28,7 @@ const copyBtn = document.getElementById('copyBtn');
 const segmentsList = document.getElementById('segmentsList');
 const addSegmentBtn = document.getElementById('addSegmentBtn');
 const strengthFill = document.getElementById('strengthFill');
+const simpleWordsCheck = document.getElementById('simpleWords');
 
 // Settings elements
 const settingsToggle = document.getElementById('settingsToggle');
@@ -41,8 +42,14 @@ let segments = [];
 let settings = {
     separator: '',
     filterProfanity: true,
-    autoCopy: false
+    autoCopy: false,
+    simpleWords: true
 };
+
+// Simple word list cache
+let simpleWordList = [];
+let isSimpleWordsLoaded = false;
+const SIMPLE_WORDS_URL = 'https://raw.githubusercontent.com/first20hours/google-10000-english/master/google-10000-english.txt';
 
 // Default segment types
 const segmentTypes = [
@@ -121,6 +128,39 @@ async function loadProfanityList() {
 if (filterProfanityCheck) {
     filterProfanityCheck.addEventListener('change', (e) => {
         settings.filterProfanity = e.target.checked;
+        generatePassphrase();
+    });
+}
+
+// Load simple words list from GitHub
+async function loadSimpleWordsList() {
+    try {
+        const response = await fetch(SIMPLE_WORDS_URL);
+        if (!response.ok) throw new Error('Failed to load simple words');
+        const text = await response.text();
+        simpleWordList = text
+            .split('\n')
+            .map(word => word.trim().toLowerCase())
+            .filter(word => word.length > 0 && !word.includes(' '));
+        isSimpleWordsLoaded = true;
+        console.log(`Loaded ${simpleWordList.length} simple words`);
+        return simpleWordList;
+    } catch (error) {
+        console.error('Error loading simple words:', error);
+        // Fallback to a small built-in list if loading fails
+        simpleWordList = ['apple', 'beach', 'cloud', 'dance', 'eagle', 'flame', 'garden', 'heart', 'island', 'joyful', 
+                         'kite', 'lily', 'moon', 'night', 'ocean', 'peace', 'quiet', 'river', 'star', 'tree',
+                         'urban', 'vivid', 'wave', 'xenon', 'youth', 'zebra', 'amber', 'bloom', 'crisp', 'dawn',
+                         'echo', 'frost', 'glow', 'haven', 'ivory', 'jade', 'kale', 'lush', 'mist', 'nova'];
+        isSimpleWordsLoaded = true;
+        return simpleWordList;
+    }
+}
+
+// Simple words setting
+if (simpleWordsCheck) {
+    simpleWordsCheck.addEventListener('change', (e) => {
+        settings.simpleWords = e.target.checked;
         generatePassphrase();
     });
 }
@@ -218,13 +258,35 @@ async function generateSegment(type, minLength, maxLength, capitalization) {
             
             while (!isClean && attempts < maxAttempts) {
                 attempts++;
-                let word = await getWordFromCache();
+                let word;
                 
-                if (wordCache.length < 5) {
+                // Check if simple words is enabled
+                if (settings.simpleWords && isSimpleWordsLoaded && simpleWordList.length > 0) {
+                    // Use simple word list (with random selection)
+                    const allSimpleWords = simpleWordList;
+                    // Filter by length
+                    const filteredWords = allSimpleWords.filter(w => 
+                        w.length >= minLength && w.length <= effectiveMax
+                    );
+                    if (filteredWords.length > 0) {
+                        word = getRandomItem(filteredWords);
+                    } else {
+                        // Fallback to API if no simple words match length
+                        word = await getWordFromCache();
+                    }
+                } else {
+                    // Use API cache
+                    word = await getWordFromCache();
+                }
+                
+                // If cache is running low, trigger refill in background
+                if (!settings.simpleWords && wordCache.length < 5) {
                     refillWordCache();
                 }
                 
-                if (word.length >= minLength && word.length <= effectiveMax) {
+                // Check if word matches length criteria
+                if (word && word.length >= minLength && word.length <= effectiveMax) {
+                    // Check profanity
                     if (settings.filterProfanity && profanitySet.size > 0) {
                         const wordLower = word.toLowerCase();
                         let hasProfanity = false;
@@ -250,7 +312,8 @@ async function generateSegment(type, minLength, maxLength, capitalization) {
                 }
                 
                 if (!isClean && attempts >= maxAttempts) {
-                    const allWords = Object.values(wordLists).flat();
+                    const allWords = settings.simpleWords && isSimpleWordsLoaded ? 
+                        simpleWordList : Object.values(wordLists).flat();
                     let fallbackWord = null;
                     for (const w of allWords) {
                         const wLower = w.toLowerCase();
@@ -280,7 +343,8 @@ async function generateSegment(type, minLength, maxLength, capitalization) {
             }
             
             if (!wordResult) {
-                const allWords = Object.values(wordLists).flat();
+                const allWords = settings.simpleWords && isSimpleWordsLoaded ? 
+                    simpleWordList : Object.values(wordLists).flat();
                 wordResult = getRandomItem(allWords);
             }
     
@@ -686,6 +750,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         loadProfanityList();
     }
+    // Load simple words list
+    loadSimpleWordsList();
     
     if (settingsToggle) {
         settingsToggle.addEventListener('click', toggleSettings);
