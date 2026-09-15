@@ -635,7 +635,7 @@ function renderSegments() {
 
 function addDefaultSegments() {
     segments = [
-        { type: 'word', minLength: 6, maxLength: 12, capitalization: 'capitalize' },
+        { type: 'word', minLength: 6, maxLength: 11, capitalization: 'capitalize' },
         { type: 'number', minLength: 2, maxLength: 2 },
         { type: 'word', minLength: 4, maxLength: 6, capitalization: 'lowercase' },
         { type: 'symbol', minLength: 1, maxLength: 1 },
