@@ -32,13 +32,27 @@
 	<br>
 		
 	<div class="container">
+		<!-- Seperated segment section -->
+		<p class="subtitle">Build your passphrase with custom segments and settings</p>
+		
+		<!-- Segments List -->
+		<div class="segments-section">
+    		<div class="segments-header">
+        		<h3>Passphrase Segments</h3>
+        		<button class="btn-add" id="addSegmentBtn">+ Add Segment</button>
+			</div>
+    		<div id="segmentsList" class="segments-list">
+        		<!-- Segments will be rendered here by JavaScript -->
+            </div>
+        </div>
+		
 		<!-- Settings Box -->
 		<div class="settings-box" id="settingsBox">
 			<div class="settings-header" id="settingsToggle">
 				<h3>⚙️ Settings</h3>
-				<span class="settings-arrow">▲</span>
+				<span class="settings-arrow">▼</span>
 			</div>
-			<div class="settings-content" id="settingsContent">
+			<div class="settings-content open" id="settingsContent">
 				<div class="setting-item">
 				    <label for="separator">Separator:</label>
 				    <input type="text" id="separator" value="" maxlength="3" placeholder="">
@@ -65,20 +79,6 @@
 				</div>
     		</div>
 		</div>
-		
-		<!-- Seperated segment section -->
-		<p class="subtitle">Build your passphrase with custom segments</p>
-		
-		<!-- Segments List -->
-		<div class="segments-section">
-    		<div class="segments-header">
-        		<h3>Passphrase Segments</h3>
-        		<button class="btn-add" id="addSegmentBtn">+ Add Segment</button>
-			</div>
-    		<div id="segmentsList" class="segments-list">
-        		<!-- Segments will be rendered here by JavaScript -->
-            </div>
-        </div>
 		
 		<div class="footer">
 		    <div>🚀 No data stored • All generation happens in your browser</div>
