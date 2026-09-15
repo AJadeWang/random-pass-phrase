@@ -29,6 +29,7 @@ const segmentsList = document.getElementById('segmentsList');
 const addSegmentBtn = document.getElementById('addSegmentBtn');
 const strengthFill = document.getElementById('strengthFill');
 const simpleWordsCheck = document.getElementById('simpleWords');
+const resetBtn = document.getElementById('resetBtn');
 
 // Settings elements
 const settingsToggle = document.getElementById('settingsToggle');
@@ -262,6 +263,31 @@ function initializeWordCache() {
     refillWordCache();
 }
 
+function resetToDefaults() {
+    // Reset settings
+    settings = {
+        separator: '',
+        filterProfanity: true,
+        autoCopy: false,
+        simpleWords: true
+    };
+
+    // Update UI to match defaults
+    if (separatorInput) separatorInput.value = '';
+    if (filterProfanityCheck) filterProfanityCheck.checked = true;
+    if (autoCopyCheck) autoCopyCheck.checked = false;
+    if (simpleWordsCheck) simpleWordsCheck.checked = true;
+
+    // Reset segments
+    addDefaultSegments();
+
+    // Save
+    saveSettings();
+
+    // Regenerate
+    generatePassphrase();
+}
+
 function secureRandomInt(min, max) {
     const range = max - min + 1;
     const maxValid = Math.floor(0xFFFFFFFF / range) * range - 1;
@@ -428,15 +454,21 @@ function createSlider(segment, label, updateCallback) {
     function updateHandlePositions() {
         const minPercent = (segment.minLength - 1) / (maxSegSize - 1);
         const maxPercent = (segment.maxLength - 1) / (maxSegSize - 1);
-
+    
         minHandle.style.left = (minPercent * 100) + '%';
         maxHandle.style.left = (maxPercent * 100) + '%';
         fill.style.left = (minPercent * 100) + '%';
         fill.style.width = ((maxPercent - minPercent) * 100) + '%';
-
-        let minDisplay = segment.minLength;
-        let maxDisplay = segment.maxLength >= maxSegSize ? '∞' : segment.maxLength;
-        label.textContent = `Length: ${minDisplay} - ${maxDisplay}`;
+    
+        // Show single number if min === max, otherwise show range
+        if (segment.minLength === segment.maxLength) {
+            const displayValue = segment.maxLength >= maxSegSize ? '∞' : segment.maxLength;
+            label.textContent = `Length: ${displayValue}`;
+        } else {
+            let minDisplay = segment.minLength;
+            let maxDisplay = segment.maxLength >= maxSegSize ? '∞' : segment.maxLength;
+            label.textContent = `Length: ${minDisplay} - ${maxDisplay}`;
+        }
     }
 
     function startDrag(e, handle) {
@@ -605,7 +637,24 @@ function renderSegments() {
 
         const label = document.createElement('label');
         label.className = 'segment-label';
-        label.textContent = `Length: ${segment.minLength} - ${segment.maxLength >= maxSegSize ? '∞' : segment.maxLength}`;
+        if (segment.minLength === segment.maxLength) {
+            const displayValue = segment.maxLength >= maxSegSize ? '∞' : segment.maxLength;
+            label.textContent = `Length: ${displayValue}`;
+            if (segment.maxLength >= maxSegSize) {
+                label.title = 'No upper limit on length';
+            } else {
+                label.removeAttribute('title');
+            }
+        } else {
+            let minDisplay = segment.minLength;
+            let maxDisplay = segment.maxLength >= maxSegSize ? '∞' : segment.maxLength;
+            label.textContent = `Length: ${minDisplay} - ${maxDisplay}`;
+            if (segment.maxLength >= maxSegSize) {
+                label.title = 'No upper limit on length';
+            } else {
+                label.removeAttribute('title');
+            }
+        }
         lengthDiv.appendChild(label);
 
         const slider = createSlider(segment, label, () => {
@@ -620,11 +669,13 @@ function renderSegments() {
         removeBtn.textContent = '✕';
         removeBtn.addEventListener('click', () => {
             if (segments.length > 1) {
-                segments.splice(index, 1);
-                saveSegments();
-                renderSegments();
-                updateStrength();
-                generatePassphrase();
+                if (confirm('Remove this segment?')) {
+                    segments.splice(index, 1);
+                    saveSegments();
+                    renderSegments();
+                    updateStrength();
+                    generatePassphrase();
+                }
             }
         });
         div.appendChild(removeBtn);
@@ -799,6 +850,14 @@ document.addEventListener('DOMContentLoaded', () => {
             settings.simpleWords = e.target.checked;
             saveSettings();
             generatePassphrase();
+        });
+    }
+
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            if (confirm('Reset all settings and segments to defaults?')) {
+                resetToDefaults();
+            }
         });
     }
 
