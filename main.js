@@ -12,7 +12,7 @@ const symbols = ['!', '@', '#', '$', '%', '^', '&', '*', '?', '+', '='];
 
 // API Configuration
 const WORD_API_URL = 'https://random-word-api.herokuapp.com/word';
-const WORD_CACHE_SIZE = 20;
+const WORD_CACHE_SIZE = 50;
 
 // Word cache
 let wordCache = [];
@@ -81,11 +81,62 @@ function toggleSettings() {
 if (settingsToggle) {
     settingsToggle.addEventListener('click', toggleSettings);
 }
-if (separatorInput) {
-    separatorInput.addEventListener('input', (e) => {
-        settings.separator = e.target.value || '';
-        generatePassphrase();
-    });
+
+// Save settings to localStorage (also saves segments)
+function saveSettings() {
+    try {
+        localStorage.setItem('passphraseSettings', JSON.stringify(settings));
+        saveSegments();
+    } catch (error) {
+        console.error('Failed to save settings:', error);
+    }
+}
+
+// Load settings from localStorage
+function loadSettings() {
+    try {
+        const saved = localStorage.getItem('passphraseSettings');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            settings = { ...settings, ...parsed };
+
+            // Update UI to match saved settings
+            if (separatorInput) separatorInput.value = settings.separator;
+            if (filterProfanityCheck) filterProfanityCheck.checked = settings.filterProfanity;
+            if (autoCopyCheck) autoCopyCheck.checked = settings.autoCopy;
+            if (simpleWordsCheck) simpleWordsCheck.checked = settings.simpleWords;
+        }
+        // Also load segments
+        loadSegments();
+    } catch (error) {
+        console.error('Failed to load settings:', error);
+    }
+}
+
+// Save segments to localStorage
+function saveSegments() {
+    try {
+        localStorage.setItem('passphraseSegments', JSON.stringify(segments));
+    } catch (error) {
+        console.error('Failed to save segments:', error);
+    }
+}
+
+// Load segments from localStorage
+function loadSegments() {
+    try {
+        const saved = localStorage.getItem('passphraseSegments');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                segments = parsed;
+                return true;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load segments:', error);
+    }
+    return false;
 }
 
 // Fetch words from external API
@@ -105,15 +156,15 @@ async function loadProfanityList() {
     try {
         const response = await fetch('https://cdn.jsdelivr.net/npm/naughty-words/en.json');
         const profanityArray = await response.json();
-        
+
         profanityList = profanityArray;
-        
+
         const filteredList = profanityArray
             .filter(word => !word.includes(' '))
             .map(word => word.toLowerCase());
-        
+
         profanitySet = new Set(filteredList);
-        
+
         const removedCount = profanityArray.length - filteredList.length;
         console.log(`Loaded ${profanitySet.size} profane words (removed ${removedCount} multi-word phrases)`);
         return profanitySet;
@@ -123,13 +174,6 @@ async function loadProfanityList() {
         profanitySet = new Set();
         return new Set();
     }
-}
-
-if (filterProfanityCheck) {
-    filterProfanityCheck.addEventListener('change', (e) => {
-        settings.filterProfanity = e.target.checked;
-        generatePassphrase();
-    });
 }
 
 // Load simple words list from GitHub
@@ -148,40 +192,32 @@ async function loadSimpleWordsList() {
     } catch (error) {
         console.error('Error loading simple words:', error);
         // Fallback to a small built-in list if loading fails
-        simpleWordList = ['apple', 'beach', 'cloud', 'dance', 'eagle', 'flame', 'garden', 'heart', 'island', 'joyful', 
-                         'kite', 'lily', 'moon', 'night', 'ocean', 'peace', 'quiet', 'river', 'star', 'tree',
-                         'urban', 'vivid', 'wave', 'xenon', 'youth', 'zebra', 'amber', 'bloom', 'crisp', 'dawn',
-                         'echo', 'frost', 'glow', 'haven', 'ivory', 'jade', 'kale', 'lush', 'mist', 'nova'];
+        simpleWordList = ['apple', 'beach', 'cloud', 'dance', 'eagle', 'flame', 'garden', 'heart', 'island', 'joyful',
+            'kite', 'lily', 'moon', 'night', 'ocean', 'peace', 'quiet', 'river', 'star', 'tree',
+            'urban', 'vivid', 'wave', 'xenon', 'youth', 'zebra', 'amber', 'bloom', 'crisp', 'dawn',
+            'echo', 'frost', 'glow', 'haven', 'ivory', 'jade', 'kale', 'lush', 'mist', 'nova'];
         isSimpleWordsLoaded = true;
         return simpleWordList;
     }
-}
-
-// Simple words setting
-if (simpleWordsCheck) {
-    simpleWordsCheck.addEventListener('change', (e) => {
-        settings.simpleWords = e.target.checked;
-        generatePassphrase();
-    });
 }
 
 function isWordProfane(word) {
     if (!settings.filterProfanity || profanitySet.size === 0) {
         return false;
     }
-    
+
     const wordLower = word.toLowerCase();
-    
+
     if (profanitySet.has(wordLower)) {
         return true;
     }
-    
+
     for (const badWord of profanitySet) {
         if (wordLower.includes(badWord)) {
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -197,7 +233,7 @@ function getFallbackWords(count) {
 async function refillWordCache() {
     if (isFetchingWords) return;
     isFetchingWords = true;
-    
+
     try {
         const newWords = await fetchWordsFromAPI(WORD_CACHE_SIZE);
         wordCache = newWords;
@@ -213,12 +249,12 @@ async function getWordFromCache() {
     if (wordCache.length === 0) {
         await refillWordCache();
     }
-    
+
     if (wordCache.length === 0) {
         const allWords = Object.values(wordLists).flat();
         return getRandomItem(allWords);
     }
-    
+
     return wordCache.pop();
 }
 
@@ -248,22 +284,22 @@ function getRandomItem(arr) {
 async function generateSegment(type, minLength, maxLength, capitalization) {
     const effectiveMax = maxLength >= maxSegSize ? 20 : maxLength;
     const length = Math.floor(Math.random() * (effectiveMax - minLength + 1)) + minLength;
-    
+
     switch (type) {
         case 'word':
             let wordResult = '';
             let attempts = 0;
             const maxAttempts = 60;
             let isClean = false;
-            
+
             while (!isClean && attempts < maxAttempts) {
                 attempts++;
                 let word;
-                
+
                 // Check if simple words is enabled AND loaded
                 if (settings.simpleWords && isSimpleWordsLoaded && simpleWordList.length > 0) {
                     // Use simple word list
-                    const filteredWords = simpleWordList.filter(w => 
+                    const filteredWords = simpleWordList.filter(w =>
                         w.length >= minLength && w.length <= effectiveMax
                     );
                     if (filteredWords.length > 0) {
@@ -276,11 +312,11 @@ async function generateSegment(type, minLength, maxLength, capitalization) {
                     // Use API cache or fallback
                     word = await getWordFromCache();
                 }
-                
+
                 if (!word) {
                     word = getRandomItem(Object.values(wordLists).flat());
                 }
-                
+
                 // Check length and profanity
                 if (word && word.length >= minLength && word.length <= effectiveMax) {
                     if (!isWordProfane(word)) {
@@ -288,27 +324,27 @@ async function generateSegment(type, minLength, maxLength, capitalization) {
                         isClean = true;
                     }
                 }
-                
+
                 // Fallback after max attempts
                 if (!isClean && attempts >= maxAttempts) {
-                    const allWords = settings.simpleWords && isSimpleWordsLoaded ? 
+                    const allWords = settings.simpleWords && isSimpleWordsLoaded ?
                         simpleWordList : Object.values(wordLists).flat();
-                    const safeWords = allWords.filter(w => 
-                        w.length >= minLength && 
-                        w.length <= effectiveMax && 
+                    const safeWords = allWords.filter(w =>
+                        w.length >= minLength &&
+                        w.length <= effectiveMax &&
                         !isWordProfane(w)
                     );
                     wordResult = safeWords.length > 0 ? getRandomItem(safeWords) : getRandomItem(allWords);
                     isClean = true;
                 }
             }
-            
+
             if (!wordResult) {
-                const allWords = settings.simpleWords && isSimpleWordsLoaded ? 
+                const allWords = settings.simpleWords && isSimpleWordsLoaded ?
                     simpleWordList : Object.values(wordLists).flat();
                 wordResult = getRandomItem(allWords);
             }
-        
+
             return applyCapitalization(wordResult, capitalization || 'capitalize');
         case 'number':
             let num = '';
@@ -348,7 +384,7 @@ function applyCapitalization(word, style) {
         case 'onerandom':
             if (word.length === 0) return word;
             if (word.length === 1) return word.toUpperCase();
-            
+
             const index = Math.floor(Math.random() * word.length);
             const chars = word.toLowerCase().split('');
             chars[index] = chars[index].toUpperCase();
@@ -361,69 +397,69 @@ function applyCapitalization(word, style) {
 function createSlider(segment, label, updateCallback) {
     const sliderContainer = document.createElement('div');
     sliderContainer.className = 'range-slider-container';
-    
+
     const track = document.createElement('div');
     track.className = 'slider-track';
     sliderContainer.appendChild(track);
-    
+
     const fill = document.createElement('div');
     fill.className = 'slider-fill';
     sliderContainer.appendChild(fill);
-    
+
     const minHandle = document.createElement('div');
     minHandle.className = 'slider-handle min-handle';
     sliderContainer.appendChild(minHandle);
-    
+
     const maxHandle = document.createElement('div');
     maxHandle.className = 'slider-handle max-handle';
     sliderContainer.appendChild(maxHandle);
-    
+
     let activeHandle = null;
     let isDragging = false;
     let hasChanged = false;
-    
+
     function getSliderPosition(clientX) {
         const rect = track.getBoundingClientRect();
         let percent = (clientX - rect.left) / rect.width;
         percent = Math.max(0, Math.min(1, percent));
         return percent;
     }
-    
+
     function updateHandlePositions() {
         const minPercent = (segment.minLength - 1) / (maxSegSize - 1);
         const maxPercent = (segment.maxLength - 1) / (maxSegSize - 1);
-        
+
         minHandle.style.left = (minPercent * 100) + '%';
         maxHandle.style.left = (maxPercent * 100) + '%';
         fill.style.left = (minPercent * 100) + '%';
         fill.style.width = ((maxPercent - minPercent) * 100) + '%';
-        
+
         let minDisplay = segment.minLength;
         let maxDisplay = segment.maxLength >= maxSegSize ? '∞' : segment.maxLength;
         label.textContent = `Length: ${minDisplay} - ${maxDisplay}`;
     }
-    
+
     function startDrag(e, handle) {
         activeHandle = handle;
         isDragging = true;
         hasChanged = false;
-        
+
         document.addEventListener('mousemove', onDrag);
         document.addEventListener('mouseup', endDrag);
         document.addEventListener('touchmove', onDragTouch);
         document.addEventListener('touchend', endDrag);
         e.preventDefault();
     }
-    
+
     function onDrag(e) {
         if (!isDragging || !activeHandle) return;
         const percent = getSliderPosition(e.clientX);
         const value = Math.round(1 + percent * (maxSegSize - 1));
         const clampedValue = Math.max(1, Math.min(maxSegSize, value));
-        
+
         let oldMin = segment.minLength;
         let oldMax = segment.maxLength;
-        
+
         if (activeHandle === 'min') {
             if (clampedValue <= maxSegSize) {
                 segment.minLength = clampedValue;
@@ -439,21 +475,21 @@ function createSlider(segment, label, updateCallback) {
                 }
             }
         }
-        
+
         // Check if values actually changed
         if (oldMin !== segment.minLength || oldMax !== segment.maxLength) {
             hasChanged = true;
         }
-        
+
         updateHandlePositions();
         if (updateCallback) updateCallback();
     }
-    
+
     function onDragTouch(e) {
         const touch = e.touches[0];
         onDrag({ clientX: touch.clientX });
     }
-    
+
     function endDrag() {
         activeHandle = null;
         isDragging = false;
@@ -461,52 +497,53 @@ function createSlider(segment, label, updateCallback) {
         document.removeEventListener('mouseup', endDrag);
         document.removeEventListener('touchmove', onDragTouch);
         document.removeEventListener('touchend', endDrag);
-        
-        // Only generate passphrase if values actually changed
+
+        // Only generate passphrase and save if values actually changed
         if (hasChanged) {
+            saveSegments();
             generatePassphrase();
             hasChanged = false;
         }
     }
-    
+
     minHandle.addEventListener('mousedown', (e) => startDrag(e, 'min'));
     maxHandle.addEventListener('mousedown', (e) => startDrag(e, 'max'));
     minHandle.addEventListener('touchstart', (e) => startDrag(e, 'min'));
     maxHandle.addEventListener('touchstart', (e) => startDrag(e, 'max'));
-    
+
     updateHandlePositions();
-    
+
     return sliderContainer;
 }
 
 function renderSegments() {
     if (!segmentsList) return;
-    
+
     segmentsList.innerHTML = '';
-    
+
     if (segments.length === 0) {
         addDefaultSegments();
         return;
     }
-    
+
     segments.forEach((segment, index) => {
         const div = document.createElement('div');
         div.className = 'segment-item';
-        
+
         const indexSpan = document.createElement('span');
         indexSpan.className = 'segment-index';
         indexSpan.textContent = index + 1;
         div.appendChild(indexSpan);
-        
+
         // Type label and selector
         const typeWrapper = document.createElement('div');
         typeWrapper.className = 'segment-field';
-        
+
         const typeLabel = document.createElement('label');
         typeLabel.className = 'segment-label';
         typeLabel.textContent = 'Type';
         typeWrapper.appendChild(typeLabel);
-        
+
         const select = document.createElement('select');
         segmentTypes.forEach(type => {
             const option = document.createElement('option');
@@ -522,25 +559,26 @@ function renderSegments() {
             if (segment.type === 'word' && !segment.capitalization) {
                 segment.capitalization = 'capitalize';
             }
+            saveSegments();
             renderSegments();
             updateStrength();
         });
         typeWrapper.appendChild(select);
         div.appendChild(typeWrapper);
-        
+
         // Capitalization (ONLY for Word type)
         if (segment.type === 'word') {
             const capWrapper = document.createElement('div');
             capWrapper.className = 'segment-field';
-            
+
             const capLabel = document.createElement('label');
             capLabel.className = 'segment-label';
             capLabel.textContent = 'Format';
             capWrapper.appendChild(capLabel);
-            
+
             const capSelect = document.createElement('select');
             capSelect.className = 'capitalization-select';
-            
+
             capitalizationOptions.forEach(opt => {
                 const option = document.createElement('option');
                 option.value = opt.value;
@@ -550,56 +588,59 @@ function renderSegments() {
                 }
                 capSelect.appendChild(option);
             });
-            
+
             capSelect.addEventListener('change', (e) => {
                 segment.capitalization = e.target.value;
+                saveSegments();
                 generatePassphrase();
             });
-            
+
             capWrapper.appendChild(capSelect);
             div.appendChild(capWrapper);
         }
-        
+
         // Length control
         const lengthDiv = document.createElement('div');
         lengthDiv.className = 'length-control';
-        
+
         const label = document.createElement('label');
         label.className = 'segment-label';
         label.textContent = `Length: ${segment.minLength} - ${segment.maxLength >= maxSegSize ? '∞' : segment.maxLength}`;
         lengthDiv.appendChild(label);
-        
+
         const slider = createSlider(segment, label, () => {
             updateStrength();
         });
         lengthDiv.appendChild(slider);
-        
+
         div.appendChild(lengthDiv);
-        
+
         const removeBtn = document.createElement('button');
         removeBtn.className = 'btn-remove';
         removeBtn.textContent = '✕';
         removeBtn.addEventListener('click', () => {
             if (segments.length > 1) {
                 segments.splice(index, 1);
+                saveSegments();
                 renderSegments();
                 updateStrength();
                 generatePassphrase();
             }
         });
         div.appendChild(removeBtn);
-        
+
         segmentsList.appendChild(div);
     });
 }
 
 function addDefaultSegments() {
     segments = [
-        { type: 'word', minLength: 4, maxLength: 8, capitalization: 'capitalize' },
+        { type: 'word', minLength: 6, maxLength: 12, capitalization: 'capitalize' },
         { type: 'number', minLength: 2, maxLength: 2 },
-        { type: 'word', minLength: 4, maxLength: 8, capitalization: 'lowercase' },
+        { type: 'word', minLength: 4, maxLength: 6, capitalization: 'lowercase' },
         { type: 'symbol', minLength: 1, maxLength: 1 },
     ];
+    saveSegments();
     renderSegments();
     updateStrength();
     generatePassphrase();
@@ -607,6 +648,7 @@ function addDefaultSegments() {
 
 function addSegment() {
     segments.push({ type: 'word', minLength: 4, maxLength: 8, capitalization: 'lowercase' });
+    saveSegments();
     renderSegments();
     updateStrength();
     generatePassphrase();
@@ -615,7 +657,7 @@ function addSegment() {
 function copyToClipboard() {
     const textSpan = passphraseDisplay.querySelector('.passphrase-text');
     if (!textSpan) return;
-    
+
     const text = textSpan.textContent;
     if (text && text !== 'Add at least one segment' && text !== 'Click generate to create your passphrase' && text !== 'Generating...') {
         navigator.clipboard.writeText(text).then(() => {
@@ -635,21 +677,21 @@ function copyToClipboard() {
 
 async function generatePassphrase() {
     if (!passphraseDisplay) return;
-    
+
     if (segments.length === 0) {
         const textSpan = passphraseDisplay.querySelector('.passphrase-text');
         if (textSpan) textSpan.textContent = 'Add at least one segment';
         if (copyBtn) copyBtn.classList.remove('visible');
         return;
     }
-    
+
     const textSpan = passphraseDisplay.querySelector('.passphrase-text');
     if (!textSpan) return;
-    
+
     textSpan.textContent = 'Generating...';
-    
+
     const separator = settings.separator;
-    
+
     try {
         const passphraseParts = await Promise.all(
             segments.map(async (seg) => {
@@ -660,23 +702,23 @@ async function generatePassphrase() {
                 }
             })
         );
-        
+
         const passphrase = passphraseParts.join(separator);
-        
+
         textSpan.textContent = passphrase;
         if (copyBtn) {
             copyBtn.classList.add('visible');
             copyBtn.textContent = '📋 Copy';
         }
-        
+
         // Animation
         textSpan.style.animation = 'none';
         setTimeout(() => {
             textSpan.style.animation = 'fadeIn 0.3s ease';
         }, 10);
-        
+
         updateStrength();
-        
+
         if (settings.autoCopy) {
             copyToClipboard();
         }
@@ -685,9 +727,10 @@ async function generatePassphrase() {
         textSpan.textContent = 'Error generating passphrase. Please try again.';
     }
 }
+
 function updateStrength() {
     if (!strengthFill) return;
-    
+
     let complexity = 0;
     segments.forEach(seg => {
         const avgLength = (seg.minLength + seg.maxLength) / 2;
@@ -695,66 +738,82 @@ function updateStrength() {
         else if (seg.type === 'number') complexity += 2 * avgLength;
         else if (seg.type === 'symbol') complexity += 3 * avgLength;
     });
-    
+
     const types = new Set(segments.map(s => s.type));
     complexity += types.size * 10;
-    
+
     const strength = Math.min(100, complexity);
     strengthFill.style.width = strength + '%';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    addDefaultSegments();
-    initializeWordCache();
-    if (filterProfanityCheck && filterProfanityCheck.checked) {
-        loadProfanityList();
+    loadSettings();
+
+    // Only add default segments if none were loaded
+    if (segments.length === 0) {
+        addDefaultSegments();
     } else {
-        loadProfanityList();
+        renderSegments();
+        updateStrength();
+        generatePassphrase();
     }
-    // Load simple words list
+
+    initializeWordCache();
+    loadProfanityList();
     loadSimpleWordsList();
-    
+
     if (settingsToggle) {
         settingsToggle.addEventListener('click', toggleSettings);
     }
-    
+
     if (separatorInput) {
         separatorInput.addEventListener('input', (e) => {
             settings.separator = e.target.value || '';
+            saveSettings();
             generatePassphrase();
         });
     }
-    
+
     if (filterProfanityCheck) {
         filterProfanityCheck.addEventListener('change', (e) => {
             settings.filterProfanity = e.target.checked;
+            saveSettings();
             generatePassphrase();
         });
     }
-    
+
     if (autoCopyCheck) {
         autoCopyCheck.addEventListener('change', (e) => {
             settings.autoCopy = e.target.checked;
-            if (settings.autoCopy && passphraseDisplay.textContent && 
+            saveSettings();
+            if (settings.autoCopy && passphraseDisplay.textContent &&
                 passphraseDisplay.textContent !== 'Add at least one segment' &&
                 passphraseDisplay.textContent !== 'Click generate to create your passphrase') {
                 copyToClipboard();
             }
         });
     }
-    
+
+    if (simpleWordsCheck) {
+        simpleWordsCheck.addEventListener('change', (e) => {
+            settings.simpleWords = e.target.checked;
+            saveSettings();
+            generatePassphrase();
+        });
+    }
+
     if (addSegmentBtn) {
         addSegmentBtn.addEventListener('click', addSegment);
     }
-    
+
     if (generateBtn) {
         generateBtn.addEventListener('click', generatePassphrase);
     }
-    
+
     if (copyBtn) {
         copyBtn.addEventListener('click', copyToClipboard);
     }
-    
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
             generatePassphrase();
